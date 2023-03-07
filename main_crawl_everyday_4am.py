@@ -530,27 +530,32 @@ def CrawlDetailNhaThau(code,details,session1,codes,folder_path1):
         cur.execute(sql, val)
         myresult = cur.fetchall()
         if myresult == []:
-            sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, contractor,created_at,updated_at) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW())"
+            sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, contractor,created_at,updated_at,status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(),Đã duyệt)"
             val = (company_name, company_address,company_website,tax_code,operation_date,contractor)
             cur.execute(sql, val)
             conn.commit()
+
         else:
-            sql = "UPDATE pccc_app_job_company_profiles SET contractor = 1 WHERE company_name = '%s'"
-            val = (company_name)
+            sql = "UPDATE pccc_app_job_company_profiles SET contractor = 1 AND updated_at = NOW() WHERE company_name = '%s'"
+            val = (company_name,)
             cur.execute(sql, val)
             conn.commit()
         
         job_company_profile_id=cur.lastrowid
-
         s=details[14]
         s1=s
 
         for nganh in s1:
             career_name = nganh[1]
-            sql = "INSERT INTO pccc_app_company_career (job_company_profile_id,career_name) VALUES (%s, %s)"
+            sql = "SELECT * FROM pccc_app_company_career WHERE job_company_profile_id = '%s' AND career_name = '%s'"
             val = (job_company_profile_id,career_name)
             cur.execute(sql, val)
-            conn.commit()
+            myresult = cur.fetchall()
+            if myresult == []:
+                sql = "INSERT INTO pccc_app_company_career (job_company_profile_id,career_name,created_at,updated_at) VALUES (%s, %s,NOW(),NOW())"
+                val = (job_company_profile_id,career_name)
+                cur.execute(sql, val)
+                conn.commit()
         
         with open(''+folder_path1+'/nhathau.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -1478,22 +1483,23 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                 review=json_data['bidPoBidpPlanProjectDetailView']
             if json_data['bidPoBidpPlanProjectDetailView'] is None:
                 return
-
+        nhap1=[0]
+        nhap1.clear()
         nhap=[0]
         nhap.clear()
 
         for gt in json_data['bidpPlanDetailToProjectList']:
             if gt['bidStartQuarter'] is None:
-                gt['bidStartQuarter'] = 0
+                gt['bidStartQuarter'] = ''
             
             if gt['bidStartMonth'] is None:
-                gt['bidStartMonth'] = 0
+                gt['bidStartMonth'] = ''
 
             if gt['bidStartYear'] is None:
-                gt['bidStartYear'] = 0
+                gt['bidStartYear'] = ''
 
             if gt['bidStartUnit'] is None:
-                gt['bidStartUnit'] = 0
+                gt['bidStartUnit'] = ''
             else :
                 if gt['bidStartUnit'] == 'Q':
                     thoigian = str('Quý ') + str(gt['bidStartQuarter']) + ', ' + str(gt['bidStartYear'])
@@ -1501,51 +1507,64 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                     thoigian = str('Tháng ') + str(gt['bidStartMonth']) + ', ' + str(gt['bidStartYear'])
 
             if gt['bidName'] is None:
-                gt['bidName'] = 0
+                gt['bidName'] = ''
 
             if gt['bidField'] is None:
-                gt['bidField'] = 0
+                gt['bidField'] = ''
 
             if gt['bidPrice'] is None:
-                gt['bidPrice'] = 0
+                gt['bidPrice'] = ''
 
             if gt['capitalDetail'] is None: 
-                gt['capitalDetail'] = 0
+                gt['capitalDetail'] = ''
 
             if gt['bidForm'] is None:
-                gt['bidForm'] = 0
+                gt['bidForm'] = ''
 
             if gt['bidMode'] is None:
-                gt['bidMode'] = 0
+                gt['bidMode'] = ''
 
             if gt['ctype'] is None:
-                gt['ctype'] = 0
+                gt['ctype'] = ''
             
             if gt['cperiod'] is None:
-                gt['cperiod'] = 0
+                gt['cperiod'] = ''
 
             if gt['cperiodUnit'] is None:
-                gt['cperiodUnit'] = 0
-
-            nhap.append([gt['bidName'],gt['bidField'],gt['bidPrice'],gt['capitalDetail'],gt['bidForm'],gt['bidMode'],thoigian,gt['ctype'],str(gt['cperiod'])+str(gt['cperiodUnit'])])
+                gt['cperiodUnit'] = ''
+                
+            if gt['idDetail'] is None:
+                gt['idDetail'] = ''
+            nhap.append([gt['bidName'],
+                         gt['bidField'],
+                         gt['bidPrice'],
+                         gt['capitalDetail'],
+                         gt['bidForm'],
+                         gt['bidMode'],
+                         thoigian,
+                         gt['ctype'],
+                         str(gt['cperiod'])+str(gt['cperiodUnit']),
+                         gt['idDetail']])
+            
+            nhap1 = CrawlDetail_TT_KHLCNT_1(code=nhap[9],session1=session,folder_bath1=folder_path1)
         
         if review['planNo'] is None:
-            review['planNo'] = 0
+            review['planNo'] = ''
         
         if review['pname'] is None:
-            review['pname'] = 0
+            review['pname'] = ''
 
         if review['name'] is None:
-            review['name'] = 0
+            review['name'] = ''
 
         if review['investTarget'] is None:
-            review['investTarget'] = 0
+            review['investTarget'] = ''
 
         if review['investorName'] is None:
-            review['investorName'] = 0
+            review['investorName'] = ''
 
         if review['bidPack'] is None:
-            review['investorName'] = 0
+            review['investorName'] = ''
 
         if review['pperiodUnit'] is not None:
             if review['pperiodUnit'] == 1:
@@ -1555,44 +1574,109 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
             if review['pperiodUnit'] == 3:
                 review['pperiodUnit'] = 'Ngày'
         else:
-            review['pperiodUnit'] = '0'
+            review['pperiodUnit'] = ''
 
         if review['pperiod'] is None:
-            review['pperiod'] = 0
+            review['pperiod'] = ''
 
         if review['pgroup'] is None:
-            review['pgroup'] = 0
+            review['pgroup'] = ''
         
         if review['pform'] is None:
-            review['pform'] = 0
-
-        if review['isOda'] is False:
-            review['isOda'] = 'Không'
+            review['pform'] = ''
+        if review['isOda'] is None:
+            review['isOda'] = ''
         else:
-            review['isOda'] = 'Có'
+            if review['isOda'] is False:
+                review['isOda'] = 'Không'
+            else:
+                review['isOda'] = 'Có'
 
         if review['location'] is None:
-            review['location'] = 0
+            review['location'] = ''
 
         if review['investTotal'] is None:
-            review['investTotal'] = 0
+            review['investTotal'] = ''
 
         if review['decisionNo'] is None:
-            review['decisionNo']
+            review['decisionNo'] = ''
             
         if review['decisionDate'] is None:
-            review['decisionDate'] = 0
+            review['decisionDate'] = ''
 
         if review['decisionAgency'] is None:
-            review['decisionAgency'] = 0
+            review['decisionAgency'] = ''
+        
+        if review['planVersion'] is None:
+            review['planVersion'] = ''
 
+        if review['publicDate'] is None:
+            review['publicDate'] =''
         if review['decisionFileId'] is None:
             a =0
         else:
             a = 'http://localhost:1234/api/download/file/browser/public?fileId='+review['decisionFileId']
 
-        details.extend([review['planNo'],review['pname'],review['name'],review['investTarget'],review['investorName'],review['bidPack'],str(review['pperiod'])+review['pperiodUnit'],review['pgroup'],review['pform'],review['isOda'],review['location'],review['investTotal'],review['decisionNo'],review['decisionDate'],review['decisionAgency'],a,nhap,codes])
+        details.extend([review['planNo'],
+                        review['pname'],
+                        review['planVersion'],
+                        review['name'],
+                        review['investTarget'],
+                        review['investorName'],
+                        review['bidPack'],
+                        str(review['pperiod'])+review['pperiodUnit'],
+                        review['pgroup'],
+                        review['pform'],
+                        review['isOda'],
+                        review['location'],
+                        review['investTotal'],
+                        review['decisionNo'],
+                        review['decisionDate'],
+                        review['decisionAgency'],
+                        a,
+                        nhap,
+                        nhap1,
+                        codes,
+                        review['publicDate']])
 
+        bid_number = str(details[0])
+        bid_number = bid_number[2:]
+
+        bid_turn_no = str(details[2])
+
+        conn=connectdb.connect()
+        cur =  conn.cursor()
+        sql = "SELECT * FROM pccc_app_bidding_news WHERE type_id = 1 AND bid_number = '%s' AND bid_turn_no = '%s'"
+        val = (bid_number, bid_turn_no)
+        cur.execute(sql, val)
+        myresult = cur.fetchall()
+        if myresult == []:
+            dt_str = details[20]
+            # Chuyển đổi sang đối tượng datetime
+            dt_obj = datetime.fromisoformat(dt_str)
+            # Format lại theo định dạng mong muốn
+            time_posting = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
+            
+            input_str = details[14]
+            input_format = "%Y-%m-%dT%H:%M:%S"
+            output_format = "%Y-%m-%d %H:%M:%S"
+
+            datetime_obj = datetime.strptime(input_str, input_format)
+            date_of_approval = datetime_obj.strftime(output_format)
+            
+            sql = "INSERT INTO pccc_app_bidding_news (type_id, created_at, updated_at,bid_number,bid_turn_no,time_posting,date_of_approval) VALUES (1,NOW(),NOW(),%s,%s,%s,%s)"
+            val = (bid_number,bid_turn_no,time_posting,date_of_approval)
+            cur.execute(sql, val)
+            conn.commit()
+            
+            news_id = cur.lastrowid
+            
+            so_khlcnt = str(bid_number) + ' - '+str(bid_turn_no)
+            
+            #sql = "INSERT INTO pccc_app_bidding_news"
+            
+        
+        
         with open(''+folder_path1+'/KHLCNT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)
@@ -1655,6 +1739,257 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
         pass
     
     return
+
+def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
+    cookies = {
+        'COOKIE_SUPPORT': 'true',
+        'GUEST_LANGUAGE_ID': 'vi_VN',
+        '_ga': 'GA1.1.2001033887.1675655198',
+        'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
+        '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
+        '5321a273c51a75133e0fb1cd75e32e27': 'ade5164d2e0fd8c83bfac03e189c2b3a',
+        '_ga_19996Z37EE': 'deleted',
+        '_ga_19996Z37EE': 'deleted',
+        'JSESSIONID': 't7pL8my1iOlIZcqsFi0FJ63hVshRerZ1A5uwrHcW.dc_app1_02',
+        '_ga_19996Z37EE': 'GS1.1.1678160637.78.1.1678162323.0.0.0',
+        'LFR_SESSION_STATE_20103': '1678162332373',
+        'citrix_ns_id': 'AAQ7-rIGZDsbKssAAAAAADuFeyfrzB16Q6f2O8qetWxEjgrmsRagqTk7pAb08kWUOw==I70GZA==rmqf_FqnXDNNeAfnlWL99RpxLaE=',
+    }
+
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/json',
+        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; 5321a273c51a75133e0fb1cd75e32e27=ade5164d2e0fd8c83bfac03e189c2b3a; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; JSESSIONID=t7pL8my1iOlIZcqsFi0FJ63hVshRerZ1A5uwrHcW.dc_app1_02; _ga_19996Z37EE=GS1.1.1678160637.78.1.1678162323.0.0.0; LFR_SESSION_STATE_20103=1678162332373; citrix_ns_id=AAQ7-rIGZDsbKssAAAAAADuFeyfrzB16Q6f2O8qetWxEjgrmsRagqTk7pAb08kWUOw==I70GZA==rmqf_FqnXDNNeAfnlWL99RpxLaE=',
+        'Origin': 'https://muasamcong.mpi.gov.vn',
+        'Pragma': 'no-cache',
+        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-plan-project-p&stepCode=plan-step-1&id=15196cdb-7d9b-4afa-a86c-c523f5df3cb6&notifyId=undefined&inputResultId=undefined&bidOpenId=undefined&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=undefined&bidMode=undefined&notifyNo=undefined&planNo=PL2300026100&pno=undefined',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 OPR/95.0.0.0',
+        'sec-ch-ua': '"Opera GX";v="95", "Chromium";v="109", "Not;A=Brand";v="24"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+    }
+    try:
+        session=session1
+        data = '{"id":"'+code+'"}'
+        response = session.post(
+            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/lcnt/bid-po-bidp-plan-project-view/get-bidp-plan-detail-by-id',
+            cookies=cookies,
+            headers=headers,
+            data=data,
+            allow_redirects=False,
+            verify= False,
+        )
+        reviews = response.json()
+        
+        if reviews['processApply'] is None:
+            reviews['processApply'] = ''
+        
+        if reviews['bidName'] is None:
+            reviews['bidName'] = ''
+
+        if reviews['isInternet'] is None:
+            reviews['isInternet'] = ''
+        else:
+            if reviews['isInternet'] == 1:
+                reviews['isInternet'] = 'Qua mạng'
+            elif reviews['isInternet'] == 0:
+                reviews['isInternet'] = 'Không qua mạng'
+
+        if reviews['isDomestic'] is None:
+            reviews['isDomestic'] = ''
+        else:
+            if reviews['isDomestic'] == 1:
+                reviews['isDomestic']='Trong nước'
+            elif reviews['isDomestic'] == 0:
+                reviews['isDomestic'] = 'Quốc tế'
+
+        if reviews['bidField'] is None:
+            reviews['bidField'] = 0
+        else:
+            if reviews['bidField'] == 'XL':
+                reviews['bidField'] = 'Xây lắp'
+            elif reviews['bidField'] == 'TV':
+                reviews['bidField'] = 'Tư vấn'
+            elif reviews['bidField'] == 'PTV':
+                reviews['bidField'] = 'Phi tư vấn'
+            elif reviews['bidField'] == 'HH':
+                reviews['bidField'] = 'Hàng hóa'
+        
+        if reviews['isPrequalification'] is None:
+            reviews['isPrequalification'] = ''
+        else:
+            if reviews['isPrequalification'] == 0:
+                reviews['isPrequalification'] = 'Không'
+            elif reviews['isPrequalification'] == 1:
+                reviews['isPrequalification'] = 'Có'
+
+        if reviews['bidForm'] is None:
+            reviews['bidForm'] = ''
+            bidForm = ''
+        else:
+            if reviews['bidForm'] == 'CHCT':
+                bidForm = 'Chào hàng cạnh tranh'
+            if reviews['bidForm'] == 'DTRR':
+                bidForm = 'Đấu thầu rộng rãi'
+            if reviews['bidForm'] == 'CHCTRG':
+                bidForm = 'Chào hàng cạnh tranh rút gọn'
+            if reviews['bidForm'] == 'CDTRG':
+                bidForm = 'Chỉ định thầu rút gọn'
+
+        if reviews['bidMode'] is None:
+            reviews['bidMode'] = ''
+        else:
+            if reviews['bidMode'] == '1_MTHS':
+                reviews['bidMode'] = 'Một giai đoạn một túi hồ sơ'
+            elif reviews['bidMode'] == '1_HTHS':
+                reviews['bidMode'] = 'Một giai đoạn hai túi hồ sơ'
+        
+        if reviews['ctype'] is None:
+            reviews['ctype'] = ''
+        else:
+            if reviews['ctype'] == 'TG':
+                reviews['ctype'] = 'Trọn gói'
+
+        if reviews['capitalDetail'] is None:
+            reviews['capitalDetail'] = ''
+        
+        if reviews['isConcentrateShopping'] is None:
+            reviews['isConcentrateShopping'] = ''
+        else:
+            if reviews['isConcentrateShopping'] == 1:
+                reviews['isConcentrateShopping'] = 'Có'
+            else:
+                reviews['isConcentrateShopping'] = 'Không'
+
+        if reviews['bidStartYear'] is None:
+            reviews['bidStartYear'] = ''
+        thoigian = ''
+        if reviews['bidStartUnit'] is None:
+            reviews['bidStartUnit'] = ''
+        else:
+            if reviews['bidStartUnit'] == 'Q':
+                reviews['bidStartUnit'] = 'Quý'
+                if reviews['bidStartQuarter'] is None:
+                    reviews['bidStartQuarter'] = ''
+                else:
+                    thoigian = str(reviews['bidStarUnit']) + ' '+ str(reviews['bidStartQuarter']) +', '+ str(reviews['bidStartYear'])
+            elif reviews['bidStartUnit'] == 'M':
+                reviews['bidStartUnit'] = 'Tháng'
+                if reviews['bidStartMonth'] is None:
+                    reviews['bidStartMonth'] = ''
+                else:
+                    thoigian = str(reviews['bidStartUnit']) + ' '+ str(reviews['bidStartMonth']) +', ' + str(reviews['bidStartYear'])
+
+        if reviews['cperiod'] is None:
+            reviews['cperiod'] = ''
+        if reviews['cperiodUnit'] is None:
+            reviews['cperiodUnit'] = ''
+        else:
+            if reviews['cperiodUnit'] == 'D':
+                reviews['cperiodUnit'] = str(reviews['cperiod']) +' '+ 'ngày'
+            elif reviews['cperiodUnit'] == 'M':
+                reviews['cperiodUnit'] = str(reviews['cperiod']) +' '+ 'tháng'
+            
+        if reviews['bidPrice'] is None:
+            reviews['bidPrice'] = ''
+
+        diadiem=''
+        if reviews['bidLocation'] is None:
+            reviews['bidLocation'] = ''
+        else:
+            if reviews['bidLocation'][0] is None:
+                reviews['bidLocation'][0] = ''
+            else:
+                if reviews['bidLocation'][0]['districtName'] is None:
+                    if reviews['bidLocation'][0]['provName'] is None:
+                        diadiem=''
+                    else:
+                        diadiem=str(reviews['bidLocation'][0]['provName'])
+                else:
+                    diadiem = str(reviews['bidLocation'][0]['districtName']) +', '+ str(reviews['bidLocation'][0]['provName'])
+        
+
+        if reviews['bidNo'] is None:
+            reviews['bidNo'] = ''
+        
+        
+        nhap1 = [0]
+        nhap1.clear()
+        nhap1.append([reviews['processApply'],
+                      reviews['bidName'],
+                      reviews['isInternet'],
+                      reviews['isDomestic'],
+                      reviews['bidField'],
+                      reviews['isPrequalification'],
+                      bidForm,
+                      reviews['bidMode'],
+                      reviews['ctype'],
+                      reviews['capitalDetail'],
+                      reviews['isConcentrateShopping'],
+                      thoigian,
+                      reviews['cperiodUnit'],
+                      reviews['bidPrice'],
+                      diadiem,
+                      reviews['bidNo']])
+        
+        return nhap1
+    
+    except requests.ReadTimeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        f.write("Ho so thong tin goi thau trong KHLCNT bi loi khong lay duoc du lieu : "+ h)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.exceptions.ConnectionError:
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        f.write("Ho so thong tin goi thau trong KHLCNT bi loi khong lay duoc du lieu : "+ h)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.Timeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        f.write("Ho so thong tin goi thau trong KHLCNT bi loi khong lay duoc du lieu : "+ h)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except Exception as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        f.write("Ho so thong tin goi thau trong KHLCNT bi loi khong lay duoc du lieu : "+ h)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
 
 def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
     cookies = {
@@ -1792,12 +2127,18 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                 review['investField'] = 'Hàng hóa'
             
         if review['bidForm'] is None:
-            review['bidForm'] = 0
+            review['bidForm'] = ''
+            bidForm = ''
         else:
             if review['bidForm'] == 'CHCT':
-                review['bidForm'] = 'Chào hàng cạnh tranh'
+                bidForm = 'Chào hàng cạnh tranh'
             if review['bidForm'] == 'DTRR':
-                review['bidForm'] = 'Đấu thầu rộng rãi'
+                bidForm = 'Đấu thầu rộng rãi'
+            if review['bidForm'] == 'CHCTRG':
+                bidForm = 'Chào hàng cạnh tranh rút gọn'
+            if review['bidForm'] == 'CDTRG':
+                bidForm = 'Chỉ định thầu rút gọn'
+            
             
         if review['isDomestic'] is None:
             review['isDomestic'] = ''
@@ -1911,7 +2252,7 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         else:
             link2 ='https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + str(review['id'])
 
-        details.extend([review['notifyNo'],review['publicDate'],review['planNo'],review['planType'],review['planName'],review['bidName'],review['investorName'],review['procuringEntityName'],review['capitalDetail'],review['investField'],review['bidForm'],v,review['isDomestic'],review['bidMode'],a,review['isInternet'],review['issueLocation'],fee,review['receiveLocation'],b,review['bidCloseDate'],review['bidOpenDate'],review['bidOpenLocation'],x,review['guaranteeValue'],review['guaranteeForm'],decisionNo,formatted_date,decisionAgency,link1,link2,codes])
+        details.extend([review['notifyNo'],review['publicDate'],review['planNo'],review['planType'],review['planName'],review['bidName'],review['investorName'],review['procuringEntityName'],review['capitalDetail'],review['investField'],bidForm,v,review['isDomestic'],review['bidMode'],a,review['isInternet'],review['issueLocation'],fee,review['receiveLocation'],b,review['bidCloseDate'],review['bidOpenDate'],review['bidOpenLocation'],x,review['guaranteeValue'],review['guaranteeForm'],decisionNo,formatted_date,decisionAgency,link1,link2,codes])
 
 
 
