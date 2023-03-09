@@ -471,7 +471,6 @@ def CrawlDetailNhaThau(code,details,session1,codes,folder_path1):
                         codes[3],
                         nhap])
         
-
         
         if details[8]!= '':
             ma=details[8]
@@ -525,15 +524,16 @@ def CrawlDetailNhaThau(code,details,session1,codes,folder_path1):
 
         contractor = 1
     
-        conn=connectdb.connect()
+        conn = connectdb.connect()
         cur =  conn.cursor()
         sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = '%s'"
         val = (company_name)
         cur.execute(sql, val)
+
         myresult = cur.fetchall()
 
         if myresult == []:
-            sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, contractor,created_at,updated_at,status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(),Đã duyệt)"
+            sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, contractor, created_at,updated_at,status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(),Đã duyệt)"
             val = (company_name, company_address,company_website,tax_code,operation_date,contractor)
             cur.execute(sql, val)
             conn.commit()
@@ -1961,7 +1961,8 @@ def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
                 reviews['isPrequalification'] = 'Không'
             elif reviews['isPrequalification'] == 1:
                 reviews['isPrequalification'] = 'Có'
-
+        bidForm = ''
+        
         if reviews['bidForm'] is None:
             reviews['bidForm'] = ''
             bidForm = ''
