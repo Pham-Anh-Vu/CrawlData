@@ -8,11 +8,13 @@ import time
 import os
 import json
 import connectdb
+from unidecode import unidecode
 from datetime import datetime, timedelta
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-yesterday = datetime.now() - timedelta(days=3)
+yesterday = datetime.now() - timedelta(days=1)
+
 yesterday_str = yesterday.strftime('%Y-%m-%d')
 
 startDay=str(yesterday_str)
@@ -470,7 +472,7 @@ def CrawlDetailNhaThau(code,details,session1,codes,folder_path1):
                         nhap])
         
 
-        #
+        
         if details[8]!= '':
             ma=details[8]
             matinh=ma[:3]
@@ -529,6 +531,7 @@ def CrawlDetailNhaThau(code,details,session1,codes,folder_path1):
         val = (company_name)
         cur.execute(sql, val)
         myresult = cur.fetchall()
+
         if myresult == []:
             sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, contractor,created_at,updated_at,status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(),Đã duyệt)"
             val = (company_name, company_address,company_website,tax_code,operation_date,contractor)
@@ -1535,6 +1538,7 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                 
             if gt['idDetail'] is None:
                 gt['idDetail'] = ''
+
             nhap.append([gt['bidName'],
                          gt['bidField'],
                          gt['bidPrice'],
@@ -1546,7 +1550,8 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                          str(gt['cperiod'])+str(gt['cperiodUnit']),
                          gt['idDetail']])
             
-            nhap1 = CrawlDetail_TT_KHLCNT_1(code=nhap[9],session1=session,folder_bath1=folder_path1)
+            print(nhap[0][9])
+            nhap1 = CrawlDetail_TT_KHLCNT_1(code=nhap[0][9],session1=session,folder_path1=folder_path1)
         
         if review['planNo'] is None:
             review['planNo'] = ''
@@ -1584,6 +1589,7 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
         
         if review['pform'] is None:
             review['pform'] = ''
+
         if review['isOda'] is None:
             review['isOda'] = ''
         else:
@@ -1612,19 +1618,23 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
 
         if review['publicDate'] is None:
             review['publicDate'] =''
+
+        if review['planType'] is None:
+            review['planType'] = ''
+            
         if review['decisionFileId'] is None:
             a =0
         else:
             a = 'http://localhost:1234/api/download/file/browser/public?fileId='+review['decisionFileId']
 
         details.extend([review['planNo'],
-                        review['pname'],
-                        review['planVersion'],
                         review['name'],
+                        review['planVersion'],
+                        review['pname'],
                         review['investTarget'],
                         review['investorName'],
                         review['bidPack'],
-                        str(review['pperiod'])+review['pperiodUnit'],
+                        str(review['pperiod'])+ str(review['pperiodUnit']),
                         review['pgroup'],
                         review['pform'],
                         review['isOda'],
@@ -1637,19 +1647,33 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                         nhap,
                         nhap1,
                         codes,
-                        review['publicDate']])
+                        review['publicDate'],
+                        review['planType']])
+        
 
         bid_number = str(details[0])
         bid_number = bid_number[2:]
-
         bid_turn_no = str(details[2])
-
+        ten_chu_dau_tu = details[5].replace('\n', '').replace('\t', '')
+        
         conn=connectdb.connect()
         cur =  conn.cursor()
+        sql = "SELECT id FROM pccc_app_job_company_profiles WHERE company_name = '%s'"
+        val = (ten_chu_dau_tu)
+        cur.execute(sql, val)
+        myresult = cur.fetchone()
+        if myresult:
+            subject_id_1 = myresult[0]
+            subject_type_1 = 'App\Models\JobCompanyProfile'
+        else:
+            subject_id_1 = ''
+            subject_id_1 = ''
+
         sql = "SELECT * FROM pccc_app_bidding_news WHERE type_id = 1 AND bid_number = '%s' AND bid_turn_no = '%s'"
         val = (bid_number, bid_turn_no)
         cur.execute(sql, val)
         myresult = cur.fetchall()
+
         if myresult == []:
             dt_str = details[20]
             # Chuyển đổi sang đối tượng datetime
@@ -1668,12 +1692,121 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
             val = (bid_number,bid_turn_no,time_posting,date_of_approval)
             cur.execute(sql, val)
             conn.commit()
+
+            type_id = 1
             
             news_id = cur.lastrowid
-            
+
+            sub_title = 'THÔNG TIN CHI TIẾT'
+
             so_khlcnt = str(bid_number) + ' - '+str(bid_turn_no)
             
-            #sql = "INSERT INTO pccc_app_bidding_news"
+            loai_thong_bao = 'Thông báo thực'
+
+            if bid_turn_no == 00 or bid_turn_no == '00':
+                hinh_thuc_thong_bao = 'Đăng lần đầu'
+            else:
+                hinh_thuc_thong_bao = 'Thay đổi'
+
+            ten_khlcnt = details[1].replace('\n', '').replace('\t', '')
+
+            ten_chu_dau_tu = details[5].replace('\n', '').replace('\t', '')
+            
+            pham_vi_dieu_chinh = ''
+
+            trang_thai_quyet_dinh = ''
+
+            ngay_phe_duyet_khlcnt = details[14]
+
+            so_qd_phe_duyet_khlcnt = details[13]
+
+            tong_muc_dau_tu = details[12]
+
+            ngay_dang_tai = time_posting
+
+            thong_bao_lien_quan = ''
+
+            quyet_dinh_phe_duyet = None
+
+            titles=[]
+            if details[21] == 'DTPT':
+                titles = ['Số KHLCNT',
+                        'Loại thông báo',
+                            'Hình thức thông báo',
+                            'Tên KHLCNT',
+                            'Tên chủ đầu tư',
+                            'Phân loại',
+                            'Phạm vi điều chỉnh'
+                            'Trạng thái quyết định',
+                            'Ngày phê duyệt KHLCNT',
+                            'Số QĐ phê duyệt KHLCNT',
+                            'Tổng mức đầu tư',
+                            'Ngày đăng tải',
+                            'Thông báo liên quan',
+                            'Quyết định phê duyệt']
+                
+                phan_loai = 'Dự án đầu tư phát triển'
+
+            subject_id = None
+            subject_type = None
+
+            for title in titles:
+                key = title.strip().lower().replace(' ', '-')
+                key = unidecode(key)
+                sql = "INSERT INTO pccc_app_bidding_news_details (key, sub_title, title, value, subject_id, subject_type, news_id, type_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())"
+                
+                if title == 'Số KHLCNT':
+                    value = so_khlcnt
+                
+                elif title == 'Loại thông báo':
+                    value = loai_thong_bao
+
+                elif title == 'Hình thức thông báo':
+                    value = hinh_thuc_thong_bao
+                    subject_id = subject_id_1
+                    subject_type = subject_type_1
+                
+                elif title == 'Tên KHLCNT':
+                    value = ten_khlcnt
+
+                elif title == 'Tên chủ đầu tư':
+                    value = ten_chu_dau_tu
+                
+                elif title == 'Phân loại':
+                    value = phan_loai
+
+                elif title == 'Phạm vi điều chỉnh':
+                    value = pham_vi_dieu_chinh
+
+                elif title == 'Trạng thái quyết định':
+                    value = trang_thai_quyet_dinh
+
+                elif title == 'Ngày phê duyệt KHLCNT':
+                    value = ngay_phe_duyet_khlcnt
+
+                elif title == 'Số QĐ phê duyệt KHLCNT':
+                    value = so_qd_phe_duyet_khlcnt
+
+                elif title == 'Tổng mức đầu tư':
+                    value = tong_muc_dau_tu
+
+                elif title == 'Ngày đăng tải':
+                    value = ngay_dang_tai
+
+                elif title == 'Thông báo liên quan':
+                    value = thong_bao_lien_quan
+
+                elif title == 'Quyết định phê duyệt':
+                    value = quyet_dinh_phe_duyet
+
+                val = (key, sub_title, title, value, subject_id, subject_type, news_id, type_id)
+                cur.execute(sql, val)
+                conn.commit()
+                subject_id = None
+                subject_type = None
+
+        
+            
             
         
         
@@ -1869,22 +2002,20 @@ def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
 
         if reviews['bidStartYear'] is None:
             reviews['bidStartYear'] = ''
+        if reviews['bidStartQuarter'] is None:
+            reviews['bidStartQuarter'] = ''
+        if reviews['bidStartMonth'] is None:
+            reviews['bidStartMonth'] = ''
         thoigian = ''
         if reviews['bidStartUnit'] is None:
             reviews['bidStartUnit'] = ''
         else:
             if reviews['bidStartUnit'] == 'Q':
                 reviews['bidStartUnit'] = 'Quý'
-                if reviews['bidStartQuarter'] is None:
-                    reviews['bidStartQuarter'] = ''
-                else:
-                    thoigian = str(reviews['bidStarUnit']) + ' '+ str(reviews['bidStartQuarter']) +', '+ str(reviews['bidStartYear'])
+                thoigian = str(reviews['bidStartUnit']) + ' '+ str(reviews['bidStartQuarter']) +', '+ str(reviews['bidStartYear'])
             elif reviews['bidStartUnit'] == 'M':
                 reviews['bidStartUnit'] = 'Tháng'
-                if reviews['bidStartMonth'] is None:
-                    reviews['bidStartMonth'] = ''
-                else:
-                    thoigian = str(reviews['bidStartUnit']) + ' '+ str(reviews['bidStartMonth']) +', ' + str(reviews['bidStartYear'])
+                thoigian = str(reviews['bidStartUnit']) + ' '+ str(reviews['bidStartMonth']) +', ' + str(reviews['bidStartYear'])
 
         if reviews['cperiod'] is None:
             reviews['cperiod'] = ''
@@ -1990,6 +2121,8 @@ def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
         session1.close()
         session1 = requests.Session()
         pass
+
+    return
 
 def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
     cookies = {
@@ -5124,6 +5257,9 @@ try:
         os.mkdir(folder_path)
 
     thread_TinTuc = 10
+    #DA
+    #KHLCNT
+    #TBMT CDT
     
     thread_NhaThau = 1
 
@@ -5160,7 +5296,6 @@ try:
             dem_BMT=dem_BMT+1
 
         elif (i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau - 1) and (i <= thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau - 1):
-            
             thread = MyThread(i,"thread" + b, thread_TinTucDongThau, 'DT',dem_DT,thread_TinTucDongThau)
             dem_DT=dem_DT+1
 
