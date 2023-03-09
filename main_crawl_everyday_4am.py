@@ -531,10 +531,10 @@ def CrawlDetailNhaThau(code,details,session1,codes,folder_path1):
         cur.execute(sql, val)
 
         myresult = cur.fetchall()
-
+        status ='Đã duyệt'
         if myresult == []:
-            sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, contractor, created_at,updated_at,status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(),Đã duyệt)"
-            val = (company_name, company_address,company_website,tax_code,operation_date,contractor)
+            sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, contractor, created_at,updated_at,status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(),%s)"
+            val = (company_name, company_address,company_website,tax_code,operation_date,contractor,status)
             cur.execute(sql, val)
             conn.commit()
 
@@ -1550,7 +1550,7 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                          str(gt['cperiod'])+str(gt['cperiodUnit']),
                          gt['idDetail']])
             
-            print(nhap[0][9])
+            
             nhap1 = CrawlDetail_TT_KHLCNT_1(code=nhap[0][9],session1=session,folder_path1=folder_path1)
         
         if review['planNo'] is None:
@@ -1664,6 +1664,7 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
         myresult = cur.fetchone()
         if myresult:
             subject_id_1 = myresult[0]
+            subject_id_1 = subject_id_1
             subject_type_1 = 'App\Models\JobCompanyProfile'
         else:
             subject_id_1 = ''
@@ -1693,9 +1694,10 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
             cur.execute(sql, val)
             conn.commit()
 
-            type_id = 1
-            
             news_id = cur.lastrowid
+            news_id = str(news_id)
+            type_id = '1'
+            
 
             sub_title = 'THÔNG TIN CHI TIẾT'
 
@@ -1746,14 +1748,15 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                             'Quyết định phê duyệt']
                 
                 phan_loai = 'Dự án đầu tư phát triển'
+            else:
+                return
 
             subject_id = None
             subject_type = None
-
+            value = 0
             for title in titles:
                 key = title.strip().lower().replace(' ', '-')
                 key = unidecode(key)
-                sql = "INSERT INTO pccc_app_bidding_news_details (key, sub_title, title, value, subject_id, subject_type, news_id, type_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())"
                 
                 if title == 'Số KHLCNT':
                     value = so_khlcnt
@@ -1800,7 +1803,21 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                     value = quyet_dinh_phe_duyet
 
                 val = (key, sub_title, title, value, subject_id, subject_type, news_id, type_id)
-                cur.execute(sql, val)
+
+                print(type(key))
+                print(type(sub_title))
+                print(type(title))
+                print(type(value))
+                print(type(subject_id))
+                print(type(subject_type))
+                print(type(news_id))
+                print(type(type_id))
+
+                conn=connectdb.connect()
+                cur =  conn.cursor()
+                sql = "INSERT INTO pccc_app_bidding_news_details (key, sub_title, title, value, subject_type,subject_id ,news_id, type_id, created_at, updated_at) VALUES ('1', '2', '3', '4',' 5', '6','1826102', '8', NOW(), NOW())"
+                val=(key,sub_title,title,news_id,type_id)
+                cur.execute(sql)
                 conn.commit()
                 subject_id = None
                 subject_type = None
