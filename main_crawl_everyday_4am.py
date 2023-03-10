@@ -526,31 +526,33 @@ def CrawlDetailNhaThau(code,details,session1,codes,folder_path1):
     
         conn = connectdb.connect()
         cur =  conn.cursor()
-        sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = '%s'"
-        val = (company_name)
+        sql = "SELECT id FROM pccc_app_job_company_profiles WHERE `company_name` = %s"
+        val = (company_name,)
         cur.execute(sql, val)
-
+        
         myresult = cur.fetchall()
         status ='Đã duyệt'
+
+
         if myresult == []:
             sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, contractor, created_at,updated_at,status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(),%s)"
             val = (company_name, company_address,company_website,tax_code,operation_date,contractor,status)
             cur.execute(sql, val)
             conn.commit()
-
+            job_company_profile_id=cur.lastrowid
         else:
-            sql = "UPDATE pccc_app_job_company_profiles SET contractor = 1 AND updated_at = NOW() WHERE company_name = '%s'"
+            sql = "UPDATE pccc_app_job_company_profiles SET contractor = 1 AND updated_at = NOW() WHERE company_name = %s"
             val = (company_name,)
             cur.execute(sql, val)
             conn.commit()
+            job_company_profile_id=myresult[-1][0]
         
-        job_company_profile_id=cur.lastrowid
         s=details[14]
         s1=s
 
         for nganh in s1:
             career_name = nganh[1]
-            sql = "SELECT * FROM pccc_app_company_career WHERE job_company_profile_id = '%s' AND career_name = '%s'"
+            sql = "SELECT * FROM pccc_app_company_career WHERE job_company_profile_id = %s AND career_name = %s"
             val = (job_company_profile_id,career_name)
             cur.execute(sql, val)
             myresult = cur.fetchall()
@@ -1066,20 +1068,21 @@ def CrawlDetailBenMoiThau(code,details,session1,codes,folder_path1):
         investor_is_approved = 1
 
         conn=connectdb.connect()
-    
+
         cur =  conn.cursor()
-        sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = '%s'"
-        val = (company_name)
+        sql = "SELECT id FROM pccc_app_job_company_profiles WHERE company_name = %s"
+        val = (company_name,)
         cur.execute(sql, val)
         myresult = cur.fetchall()
         if myresult == []:
-            sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, investor_is_approved,created_at,updated_at) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW())"
-            val = (company_name, company_address,company_website,tax_code,operation_date,investor_is_approved)
+            status = 'Đã duyệt'
+            sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, investor_is_approved,created_at,updated_at,status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(), %s)"
+            val = (company_name, company_address,company_website,tax_code,operation_date,investor_is_approved,status)
             cur.execute(sql, val)
             conn.commit()
         else: 
-            sql = "UPDATE pccc_app_job_company_profiles SET investor_is_approved = 1 WHERE company_name = '%s'"
-            val = (company_name)
+            sql = "UPDATE pccc_app_job_company_profiles SET investor_is_approved = 1 WHERE company_name = %s"
+            val = (company_name,)
             cur.execute(sql, val)
             conn.commit()
 
@@ -1550,8 +1553,8 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                          str(gt['cperiod'])+str(gt['cperiodUnit']),
                          gt['idDetail']])
             
-            
-            nhap1 = CrawlDetail_TT_KHLCNT_1(code=nhap[0][9],session1=session,folder_path1=folder_path1)
+            nhapx = CrawlDetail_TT_KHLCNT_1(code=nhap[0][9],session1=session,folder_path1=folder_path1)
+            nhap1.append(nhapx)
         
         if review['planNo'] is None:
             review['planNo'] = ''
@@ -1650,182 +1653,7 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                         review['publicDate'],
                         review['planType']])
         
-
-        bid_number = str(details[0])
-        bid_number = bid_number[2:]
-        bid_turn_no = str(details[2])
-        ten_chu_dau_tu = details[5].replace('\n', '').replace('\t', '')
-        
-        conn=connectdb.connect()
-        cur =  conn.cursor()
-        sql = "SELECT id FROM pccc_app_job_company_profiles WHERE company_name = '%s'"
-        val = (ten_chu_dau_tu)
-        cur.execute(sql, val)
-        myresult = cur.fetchone()
-        if myresult:
-            subject_id_1 = myresult[0]
-            subject_id_1 = subject_id_1
-            subject_type_1 = 'App\Models\JobCompanyProfile'
-        else:
-            subject_id_1 = ''
-            subject_id_1 = ''
-
-        sql = "SELECT * FROM pccc_app_bidding_news WHERE type_id = 1 AND bid_number = '%s' AND bid_turn_no = '%s'"
-        val = (bid_number, bid_turn_no)
-        cur.execute(sql, val)
-        myresult = cur.fetchall()
-
-        if myresult == []:
-            dt_str = details[20]
-            # Chuyển đổi sang đối tượng datetime
-            dt_obj = datetime.fromisoformat(dt_str)
-            # Format lại theo định dạng mong muốn
-            time_posting = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
-            
-            input_str = details[14]
-            input_format = "%Y-%m-%dT%H:%M:%S"
-            output_format = "%Y-%m-%d %H:%M:%S"
-
-            datetime_obj = datetime.strptime(input_str, input_format)
-            date_of_approval = datetime_obj.strftime(output_format)
-            
-            sql = "INSERT INTO pccc_app_bidding_news (type_id, created_at, updated_at,bid_number,bid_turn_no,time_posting,date_of_approval) VALUES (1,NOW(),NOW(),%s,%s,%s,%s)"
-            val = (bid_number,bid_turn_no,time_posting,date_of_approval)
-            cur.execute(sql, val)
-            conn.commit()
-
-            news_id = cur.lastrowid
-            news_id = str(news_id)
-            type_id = '1'
-            
-
-            sub_title = 'THÔNG TIN CHI TIẾT'
-
-            so_khlcnt = str(bid_number) + ' - '+str(bid_turn_no)
-            
-            loai_thong_bao = 'Thông báo thực'
-
-            if bid_turn_no == 00 or bid_turn_no == '00':
-                hinh_thuc_thong_bao = 'Đăng lần đầu'
-            else:
-                hinh_thuc_thong_bao = 'Thay đổi'
-
-            ten_khlcnt = details[1].replace('\n', '').replace('\t', '')
-
-            ten_chu_dau_tu = details[5].replace('\n', '').replace('\t', '')
-            
-            pham_vi_dieu_chinh = ''
-
-            trang_thai_quyet_dinh = ''
-
-            ngay_phe_duyet_khlcnt = details[14]
-
-            so_qd_phe_duyet_khlcnt = details[13]
-
-            tong_muc_dau_tu = details[12]
-
-            ngay_dang_tai = time_posting
-
-            thong_bao_lien_quan = ''
-
-            quyet_dinh_phe_duyet = None
-
-            titles=[]
-            if details[21] == 'DTPT':
-                titles = ['Số KHLCNT',
-                        'Loại thông báo',
-                            'Hình thức thông báo',
-                            'Tên KHLCNT',
-                            'Tên chủ đầu tư',
-                            'Phân loại',
-                            'Phạm vi điều chỉnh'
-                            'Trạng thái quyết định',
-                            'Ngày phê duyệt KHLCNT',
-                            'Số QĐ phê duyệt KHLCNT',
-                            'Tổng mức đầu tư',
-                            'Ngày đăng tải',
-                            'Thông báo liên quan',
-                            'Quyết định phê duyệt']
-                
-                phan_loai = 'Dự án đầu tư phát triển'
-            else:
-                return
-
-            subject_id = None
-            subject_type = None
-            value = 0
-            for title in titles:
-                key = title.strip().lower().replace(' ', '-')
-                key = unidecode(key)
-                
-                if title == 'Số KHLCNT':
-                    value = so_khlcnt
-                
-                elif title == 'Loại thông báo':
-                    value = loai_thong_bao
-
-                elif title == 'Hình thức thông báo':
-                    value = hinh_thuc_thong_bao
-                    subject_id = subject_id_1
-                    subject_type = subject_type_1
-                
-                elif title == 'Tên KHLCNT':
-                    value = ten_khlcnt
-
-                elif title == 'Tên chủ đầu tư':
-                    value = ten_chu_dau_tu
-                
-                elif title == 'Phân loại':
-                    value = phan_loai
-
-                elif title == 'Phạm vi điều chỉnh':
-                    value = pham_vi_dieu_chinh
-
-                elif title == 'Trạng thái quyết định':
-                    value = trang_thai_quyet_dinh
-
-                elif title == 'Ngày phê duyệt KHLCNT':
-                    value = ngay_phe_duyet_khlcnt
-
-                elif title == 'Số QĐ phê duyệt KHLCNT':
-                    value = so_qd_phe_duyet_khlcnt
-
-                elif title == 'Tổng mức đầu tư':
-                    value = tong_muc_dau_tu
-
-                elif title == 'Ngày đăng tải':
-                    value = ngay_dang_tai
-
-                elif title == 'Thông báo liên quan':
-                    value = thong_bao_lien_quan
-
-                elif title == 'Quyết định phê duyệt':
-                    value = quyet_dinh_phe_duyet
-
-                val = (key, sub_title, title, value, subject_id, subject_type, news_id, type_id)
-
-                print(type(key))
-                print(type(sub_title))
-                print(type(title))
-                print(type(value))
-                print(type(subject_id))
-                print(type(subject_type))
-                print(type(news_id))
-                print(type(type_id))
-
-                conn=connectdb.connect()
-                cur =  conn.cursor()
-                sql = "INSERT INTO pccc_app_bidding_news_details (key, sub_title, title, value, subject_type,subject_id ,news_id, type_id, created_at, updated_at) VALUES ('1', '2', '3', '4',' 5', '6','1826102', '8', NOW(), NOW())"
-                val=(key,sub_title,title,news_id,type_id)
-                cur.execute(sql)
-                conn.commit()
-                subject_id = None
-                subject_type = None
-
-        
-            
-            
-        
+        upData_KHLCNT(details=details)
         
         with open(''+folder_path1+'/KHLCNT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -1887,8 +1715,237 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
         session1 = requests.Session()
         details.clear()
         pass
-    
     return
+
+def upData_KHLCNT(details):
+    bid_number = str(details[0])
+    bid_number = bid_number[2:]
+    bid_turn_no = str(details[2])
+    ten_chu_dau_tu = details[5].replace('\n', '').replace('\t', '')
+    
+    conn=connectdb.connect()
+    cur =  conn.cursor()
+    sql = "SELECT id FROM pccc_app_job_company_profiles WHERE company_name = %s"
+    val = (ten_chu_dau_tu,)
+    cur.execute(sql, val)
+    conn.commit()
+    myresult = cur.fetchone()
+    if myresult:
+        subject_id_1 = myresult[0]
+        subject_id_1 = str(subject_id_1)
+        subject_type_1 = 'App\Models\JobCompanyProfile'
+    else:
+        subject_id_1 = None
+        subject_type_1 = None
+
+    sql = "SELECT * FROM pccc_app_bidding_news WHERE type_id = 1 AND bid_number = %s AND bid_turn_no = %s"
+    val = (bid_number, bid_turn_no)
+    cur.execute(sql, val)
+    conn.commit()
+    myresult = cur.fetchall()
+
+    if myresult == []:
+        dt_str = details[20]
+        # Chuyển đổi sang đối tượng datetime
+        dt_obj = datetime.fromisoformat(dt_str)
+        # Format lại theo định dạng mong muốn
+        time_posting = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
+        
+        input_str = details[14]
+        input_format = "%Y-%m-%dT%H:%M:%S"
+        output_format = "%Y-%m-%d %H:%M:%S"
+
+        datetime_obj = datetime.strptime(input_str, input_format)
+        date_of_approval = datetime_obj.strftime(output_format)
+        
+        sql = "INSERT INTO pccc_app_bidding_news (type_id, created_at, updated_at,bid_number,bid_turn_no,time_posting,date_of_approval) VALUES (1,NOW(),NOW(),%s,%s,%s,%s)"
+        val = (bid_number,bid_turn_no,time_posting,date_of_approval)
+        cur.execute(sql, val)
+        conn.commit()
+
+        news_id = cur.lastrowid
+        news_id = int(news_id)
+        type_id = 1
+        
+
+        sub_title = 'THÔNG TIN CHI TIẾT'
+
+        khlcnt_number = details[0]
+
+        so_khlcnt = str(khlcnt_number) + ' - '+str(bid_turn_no)
+        
+        loai_thong_bao = 'Thông báo thực'
+
+        if bid_turn_no == 00 or bid_turn_no == '00':
+            hinh_thuc_thong_bao = 'Đăng lần đầu'
+        else:
+            hinh_thuc_thong_bao = 'Thay đổi'
+
+        ten_khlcnt = details[1].replace('\n', '').replace('\t', '')
+
+        ten_chu_dau_tu = details[5].replace('\n', '').replace('\t', '')
+        
+        pham_vi_dieu_chinh = ''
+
+        trang_thai_quyet_dinh = ''
+
+        ngay_phe_duyet_khlcnt = details[14]
+
+        so_qd_phe_duyet_khlcnt = details[13]
+        
+        if details[12] != '':
+            tong_muc_dau_tu = int(details[12])
+            tong_muc_dau_tu = "{:,}".format(tong_muc_dau_tu).replace(",", ".") + " VND"
+        
+        else:
+            tong_muc_dau_tu = details[12]
+
+        ngay_dang_tai = time_posting
+
+        thong_bao_lien_quan = ''
+
+        quyet_dinh_phe_duyet = None
+
+        if details[21] == 'DTPT':
+            
+            titles1 = 'Số KHLCNT'
+
+            titles2 = 'Loại thông báo'
+
+            titles3 = 'Hình thức thông báo'
+
+            titles4 = 'Tên KHLCNT'
+
+            titles5 = 'Tên chủ đầu tư'
+
+            titles6 = 'Phân loại'
+
+            titles7 = 'Phạm vi điều chỉnh'
+
+            titles8 = 'Trạng thái quyết định'
+
+            titles9 = 'Ngày phê duyệt KHLCNT'
+
+            titles10 = 'Số QĐ phê duyệt KHLCNT'
+
+            titles11 = 'Tổng mức đầu tư'
+
+            titles12 = 'Ngày đăng tải'
+
+            titles13 = 'Thông báo liên quan'
+
+            titles14 = 'Quyết định phê duyệt'
+        
+
+            phan_loai = 'Dự án đầu tư phát triển'
+
+            key1=titles1.strip().lower().replace(' ', '-')
+            key1 = unidecode(key1)
+
+            key2=titles2.strip().lower().replace(' ', '-')
+            key2 = unidecode(key2)
+            
+            key3=titles3.strip().lower().replace(' ', '-')
+            key3 = unidecode(key3)
+
+            key4=titles4.strip().lower().replace(' ', '-')
+            key4 = unidecode(key4)
+
+            key5=titles5.strip().lower().replace(' ', '-')
+            key5 = unidecode(key5)
+
+            key6=titles6.strip().lower().replace(' ', '-')
+            key6 = unidecode(key6)
+
+            key7=titles7.strip().lower().replace(' ', '-')
+            key7 = unidecode(key7)
+
+            key8=titles8.strip().lower().replace(' ', '-')
+            key8 = unidecode(key8)
+
+            key9=titles9.strip().lower().replace(' ', '-')
+            key9 = unidecode(key9)
+
+            key10=titles10.strip().lower().replace(' ', '-')
+            key10 = unidecode(key10)
+
+            key11=titles11.strip().lower().replace(' ', '-')
+            key11 = unidecode(key11)
+
+            key12=titles12.strip().lower().replace(' ', '-')
+            key12 = unidecode(key12)
+
+            key13=titles13.strip().lower().replace(' ', '-')
+            key13 = unidecode(key13)
+
+            key14=titles14.strip().lower().replace(' ', '-')
+            key14 = unidecode(key14)
+
+
+            value1 = so_khlcnt
+        
+            value2 = loai_thong_bao
+
+            value3 = hinh_thuc_thong_bao
+
+            value4 = ten_khlcnt
+
+            value5 = ten_chu_dau_tu
+
+            value6 = phan_loai
+ 
+            value7 = pham_vi_dieu_chinh
+        
+            value8 = trang_thai_quyet_dinh
+        
+            value9 = ngay_phe_duyet_khlcnt
+        
+            value10 = so_qd_phe_duyet_khlcnt
+
+            value11 = tong_muc_dau_tu
+        
+            value12 = ngay_dang_tai
+        
+            value13 = thong_bao_lien_quan
+        
+            value14 = quyet_dinh_phe_duyet
+
+            subject_id = None
+            subject_type = None
+
+            records = [
+                (key1, sub_title, titles1, value1, subject_id, subject_type, news_id, type_id),
+                (key2, sub_title, titles2, value2, subject_id, subject_type, news_id, type_id),
+                (key3, sub_title, titles3, value3, subject_id, subject_type, news_id, type_id),
+                (key4, sub_title, titles4, value4, subject_id, subject_type, news_id, type_id),
+                (key5, sub_title, titles5, value5, subject_id_1, subject_type_1, news_id, type_id),
+                (key6, sub_title, titles6, value6, subject_id, subject_type, news_id, type_id),
+                (key7, sub_title, titles7, value7, subject_id, subject_type, news_id, type_id),
+                (key8, sub_title, titles8, value8, subject_id, subject_type, news_id, type_id),
+                (key9, sub_title, titles9, value9, subject_id, subject_type, news_id, type_id),
+                (key10, sub_title, titles10, value10, subject_id, subject_type, news_id, type_id),
+                (key11, sub_title, titles11, value11, subject_id, subject_type, news_id, type_id),
+                (key12, sub_title, titles12, value12, subject_id, subject_type, news_id, type_id),
+                (key13, sub_title, titles13, value13, subject_id, subject_type, news_id, type_id),
+                (key14, sub_title, titles14, value14, subject_id, subject_type, news_id, type_id)]
+
+                
+
+
+            sql1 = "INSERT INTO pccc_app_bidding_news_details (`key`, sub_title, title, value, subject_id, subject_type, news_id, type_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW());"
+            cur.executemany(sql1, records)
+
+            conn.commit()
+        
+
+        else:
+            return
+
+    else:
+        return   
+
+        
+
 
 def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
     cookies = {
@@ -1960,7 +2017,7 @@ def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
                 reviews['isDomestic'] = 'Quốc tế'
 
         if reviews['bidField'] is None:
-            reviews['bidField'] = 0
+            reviews['bidField'] = ''
         else:
             if reviews['bidField'] == 'XL':
                 reviews['bidField'] = 'Xây lắp'
@@ -2049,28 +2106,31 @@ def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
             reviews['bidPrice'] = ''
 
         diadiem=''
+        
         if reviews['bidLocation'] is None:
             reviews['bidLocation'] = ''
         else:
-            if reviews['bidLocation'][0] is None:
-                reviews['bidLocation'][0] = ''
+            if reviews['bidLocation'] == []:
+                diadiem = ''
             else:
-                if reviews['bidLocation'][0]['districtName'] is None:
-                    if reviews['bidLocation'][0]['provName'] is None:
-                        diadiem=''
-                    else:
-                        diadiem=str(reviews['bidLocation'][0]['provName'])
+                if reviews['bidLocation'][0] is None:
+                    reviews['bidLocation'][0] = ''
                 else:
-                    diadiem = str(reviews['bidLocation'][0]['districtName']) +', '+ str(reviews['bidLocation'][0]['provName'])
-        
+                    if reviews['bidLocation'][0]['districtName'] is None:
+                        if reviews['bidLocation'][0]['provName'] is None:
+                            diadiem=''
+                        else:
+                            diadiem=str(reviews['bidLocation'][0]['provName'])
+                    else:
+                        diadiem = str(reviews['bidLocation'][0]['districtName']) +', '+ str(reviews['bidLocation'][0]['provName'])
+            
 
         if reviews['bidNo'] is None:
             reviews['bidNo'] = ''
         
-        
-        nhap1 = [0]
+        nhap1 = []
         nhap1.clear()
-        nhap1.append([reviews['processApply'],
+        nhap1.extend([reviews['processApply'],
                       reviews['bidName'],
                       reviews['isInternet'],
                       reviews['isDomestic'],
@@ -2086,7 +2146,6 @@ def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
                       reviews['bidPrice'],
                       diadiem,
                       reviews['bidNo']])
-        
         return nhap1
     
     except requests.ReadTimeout as err:
@@ -2139,8 +2198,6 @@ def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
         session1.close()
         session1 = requests.Session()
         pass
-
-    return
 
 def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
     cookies = {
