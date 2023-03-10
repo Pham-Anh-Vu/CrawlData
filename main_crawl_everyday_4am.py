@@ -1523,15 +1523,34 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
 
             if gt['capitalDetail'] is None: 
                 gt['capitalDetail'] = ''
-
+                
+            
             if gt['bidForm'] is None:
                 gt['bidForm'] = ''
+            else:
+                if gt['bidForm'] == 'CHCT':
+                    gt['bidForm'] = 'Chào hàng cạnh tranh'
+                if gt['bidForm'] == 'DTRR':
+                    gt['bidForm'] = 'Đấu thầu rộng rãi'
+                if gt['bidForm'] == 'CHCTRG':
+                    gt['bidForm'] = 'Chào hàng cạnh tranh rút gọn'
+                if gt['bidForm'] == 'CDTRG':
+                    gt['bidForm'] = 'Chỉ định thầu rút gọn'
 
             if gt['bidMode'] is None:
                 gt['bidMode'] = ''
+            else:
+                if gt['bidMode'] == '1_MTHS':
+                    gt['bidMode'] = 'Một giai đoạn một túi hồ sơ'
+                elif gt['bidMode'] == '1_HTHS':
+                    gt['bidMode'] = 'Một giai đoạn hai túi hồ sơ'
+        
 
             if gt['ctype'] is None:
                 gt['ctype'] = ''
+            else:
+                if gt['ctype'] == 'TG':
+                    gt['ctype'] = 'Trọn gói'
             
             if gt['cperiod'] is None:
                 gt['cperiod'] = ''
@@ -1542,6 +1561,30 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
             if gt['idDetail'] is None:
                 gt['idDetail'] = ''
 
+            if gt['isDomestic'] is None:
+                gt['isDomestic'] = ''
+            else:
+                if gt['isDomestic'] == 1:
+                    gt['isDomestic'] = 'Trong nước'
+                elif gt['isDomestic'] == 0:
+                    gt['isDomestic'] = 'Quốc tế'
+
+            if gt['isInternet'] is None:
+                gt['isInternet'] = ''
+            else:
+                if gt['isInternet'] == 1:
+                    gt['isInternet'] = 'Qua mạng'
+                elif gt['isInternet'] == 0:
+                    gt['isInternet'] = 'Không qua mạng'
+
+            if gt['isPrequalification'] is None:
+                gt['isPrequalification'] = ''
+            else:
+                if gt['isPrequalification'] == 1:
+                    gt['isPrequalification'] = 'Có sơ tuyển'
+                elif gt['isPrequalification'] == 0:
+                    gt['isPrequalification'] = 'Không sơ tuyển'
+
             nhap.append([gt['bidName'],
                          gt['bidField'],
                          gt['bidPrice'],
@@ -1551,7 +1594,10 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                          thoigian,
                          gt['ctype'],
                          str(gt['cperiod'])+str(gt['cperiodUnit']),
-                         gt['idDetail']])
+                         gt['idDetail'],
+                         gt['isDomestic'],
+                         gt['isInternet'],
+                         gt['isPrequalification']])
             
             nhapx = CrawlDetail_TT_KHLCNT_1(code=nhap[0][9],session1=session,folder_path1=folder_path1)
             nhap1.append(nhapx)
@@ -1612,6 +1658,12 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
             
         if review['decisionDate'] is None:
             review['decisionDate'] = ''
+        else:
+            # Tạo đối tượng datetime từ chuỗi thời gian ban đầu
+            review['decisionDate'] = datetime.fromisoformat(review['decisionDate'])
+
+            # Chuyển đổi đối tượng datetime sang chuỗi ngày tháng mong muốn
+            review['decisionDate'] = review['decisionDate'].strftime('%d/%m/%Y')
 
         if review['decisionAgency'] is None:
             review['decisionAgency'] = ''
@@ -1621,6 +1673,12 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
 
         if review['publicDate'] is None:
             review['publicDate'] =''
+        else:
+            # Tạo đối tượng datetime từ chuỗi thời gian ban đầu
+            review['publicDate'] = datetime.fromisoformat(review['publicDate'])
+
+            # Chuyển đổi đối tượng datetime sang chuỗi ngày tháng mong muốn
+            review['publicDate'] = review['publicDate'].strftime('%d/%m/%Y')
 
         if review['planType'] is None:
             review['planType'] = ''
@@ -1719,7 +1777,6 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
 
 def upData_KHLCNT(details):
     bid_number = str(details[0])
-    bid_number = bid_number[2:]
     bid_turn_no = str(details[2])
     ten_chu_dau_tu = details[5].replace('\n', '').replace('\t', '')
     
@@ -1767,7 +1824,6 @@ def upData_KHLCNT(details):
         news_id = int(news_id)
         type_id = 1
         
-
         sub_title = 'THÔNG TIN CHI TIẾT'
 
         khlcnt_number = details[0]
@@ -1836,7 +1892,6 @@ def upData_KHLCNT(details):
 
             titles14 = 'Quyết định phê duyệt'
         
-
             phan_loai = 'Dự án đầu tư phát triển'
 
             key1=titles1.strip().lower().replace(' ', '-')
@@ -1880,7 +1935,6 @@ def upData_KHLCNT(details):
 
             key14=titles14.strip().lower().replace(' ', '-')
             key14 = unidecode(key14)
-
 
             value1 = so_khlcnt
         
@@ -1929,14 +1983,23 @@ def upData_KHLCNT(details):
                 (key13, sub_title, titles13, value13, subject_id, subject_type, news_id, type_id),
                 (key14, sub_title, titles14, value14, subject_id, subject_type, news_id, type_id)]
 
-                
-
-
             sql1 = "INSERT INTO pccc_app_bidding_news_details (`key`, sub_title, title, value, subject_id, subject_type, news_id, type_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW());"
             cur.executemany(sql1, records)
-
             conn.commit()
         
+            for tbmt in details[18]:
+                lcnt_field =  tbmt[4]
+                package_name = tbmt[1]
+                bid_price = tbmt[13]
+                capital_detail = tbmt[9]
+                
+                #form_of_lcnt = tbmt[4] + ', ' + tbmt[10].lower() +' '+ tbmt[12].lower()+', '+tbmt[11].lower()
+                #lcnt_method = tbmt[5]
+                #time_start = tbmt[6]
+                #contract_type = tbmt[7]
+                #duration_of_contact = tbmt[8]
+
+
 
         else:
             return
