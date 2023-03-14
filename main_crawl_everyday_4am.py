@@ -1601,7 +1601,7 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
             
             nhapx = CrawlDetail_TT_KHLCNT_1(code=nhap[0][9],session1=session,folder_path1=folder_path1)
             nhap1.append(nhapx)
-        
+       
         if review['planNo'] is None:
             review['planNo'] = ''
         
@@ -1663,8 +1663,8 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
             review['decisionDate'] = datetime.fromisoformat(review['decisionDate'])
 
             # Chuyển đổi đối tượng datetime sang chuỗi ngày tháng mong muốn
-            review['decisionDate'] = review['decisionDate'].strftime('%d/%m/%Y')
-
+            review['decisionDate'] = review['decisionDate'].strftime('%Y/%m/%d')
+            review['decisionDate'] = review['decisionDate'] + ' 00:00:00'
         if review['decisionAgency'] is None:
             review['decisionAgency'] = ''
         
@@ -1674,12 +1674,12 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
         if review['publicDate'] is None:
             review['publicDate'] =''
         else:
-            # Tạo đối tượng datetime từ chuỗi thời gian ban đầu
-            review['publicDate'] = datetime.fromisoformat(review['publicDate'])
+            #Tạo đối tượng datetime từ chuỗi thời gian ban đầu
+            review['publicDate'] = datetime.strptime(review['publicDate'], '%Y-%m-%dT%H:%M:%S.%f')
 
             # Chuyển đổi đối tượng datetime sang chuỗi ngày tháng mong muốn
-            review['publicDate'] = review['publicDate'].strftime('%d/%m/%Y')
-
+            review['publicDate'] = review['publicDate'].strftime('%Y-%m-%d %H:%M:%S')
+         
         if review['planType'] is None:
             review['planType'] = ''
             
@@ -1802,18 +1802,18 @@ def upData_KHLCNT(details):
     myresult = cur.fetchall()
 
     if myresult == []:
-        dt_str = details[20]
+        time_posting = details[20]
         # Chuyển đổi sang đối tượng datetime
-        dt_obj = datetime.fromisoformat(dt_str)
+        #dt_obj = datetime.fromisoformat(dt_str)
         # Format lại theo định dạng mong muốn
-        time_posting = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
+        #time_posting = dt_obj.strftime("%Y-%m-%d %H:%M:%S")
         
-        input_str = details[14]
-        input_format = "%Y-%m-%dT%H:%M:%S"
-        output_format = "%Y-%m-%d %H:%M:%S"
+        date_of_approval = details[14]
+        #input_format = "%Y-%m-%dT%H:%M:%S"
+        #output_format = "%Y-%m-%d %H:%M:%S"
 
-        datetime_obj = datetime.strptime(input_str, input_format)
-        date_of_approval = datetime_obj.strftime(output_format)
+        #datetime_obj = datetime.strptime(input_str, input_format)
+        #date_of_approval = datetime_obj.strftime(output_format)
         
         sql = "INSERT INTO pccc_app_bidding_news (type_id, created_at, updated_at,bid_number,bid_turn_no,time_posting,date_of_approval) VALUES (1,NOW(),NOW(),%s,%s,%s,%s)"
         val = (bid_number,bid_turn_no,time_posting,date_of_approval)
@@ -1986,21 +1986,26 @@ def upData_KHLCNT(details):
             sql1 = "INSERT INTO pccc_app_bidding_news_details (`key`, sub_title, title, value, subject_id, subject_type, news_id, type_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW());"
             cur.executemany(sql1, records)
             conn.commit()
-        
+
+            print(details[18])
             for tbmt in details[18]:
+                print(tbmt)
                 lcnt_field =  tbmt[4]
                 package_name = tbmt[1]
                 bid_price = tbmt[13]
                 capital_detail = tbmt[9]
-                
-                #form_of_lcnt = tbmt[4] + ', ' + tbmt[10].lower() +' '+ tbmt[12].lower()+', '+tbmt[11].lower()
-                #lcnt_method = tbmt[5]
-                #time_start = tbmt[6]
-                #contract_type = tbmt[7]
-                #duration_of_contact = tbmt[8]
+                form_of_lcnt = tbmt[6] + ', ' + tbmt[3].lower() +' '+ tbmt[5].lower()+', '+tbmt[2].lower()
+                lcnt_method = tbmt[7]
+                time_start_lcnt = tbmt[11]
+                contract_type = tbmt[8]
+                duration_of_contact = tbmt[12]
+                execution_address = tbmt[14]
+                number_tbml_tbmst = tbmt[15]
 
-
-
+                sql= "INSERT INTO pccc_app_bidding_plan_package (news_id, lcnt_field, package_name, bid_price, capital_detail, form_of_lcnt, lcnt_method, time_start_lcnt, contract_type, duration_of_contract, created_at, updated_at, execution_address, number_tbml_tbmst) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s, %s)"
+                val=(news_id,lcnt_field,package_name,bid_price,capital_detail,form_of_lcnt,lcnt_method,time_start_lcnt, contract_type, duration_of_contact, execution_address, number_tbml_tbmst)
+                cur.execute(sql, val)
+                conn.commit()
         else:
             return
 
