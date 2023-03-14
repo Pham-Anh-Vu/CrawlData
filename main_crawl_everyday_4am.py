@@ -1599,7 +1599,8 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                          gt['isInternet'],
                          gt['isPrequalification']])
             
-            nhapx = CrawlDetail_TT_KHLCNT_1(code=nhap[0][9],session1=session,folder_path1=folder_path1)
+        for nhapy in nhap:
+            nhapx = CrawlDetail_TT_KHLCNT_1(code=nhapy[9],session1=session,folder_path1=folder_path1)
             nhap1.append(nhapx)
        
         if review['planNo'] is None:
@@ -1987,12 +1988,11 @@ def upData_KHLCNT(details):
             cur.executemany(sql1, records)
             conn.commit()
 
-            print(details[18])
             for tbmt in details[18]:
-                print(tbmt)
                 lcnt_field =  tbmt[4]
                 package_name = tbmt[1]
                 bid_price = tbmt[13]
+                bid_price = '{:,}'.format(bid_price).replace(',', '.')
                 capital_detail = tbmt[9]
                 form_of_lcnt = tbmt[6] + ', ' + tbmt[3].lower() +' '+ tbmt[5].lower()+', '+tbmt[2].lower()
                 lcnt_method = tbmt[7]
