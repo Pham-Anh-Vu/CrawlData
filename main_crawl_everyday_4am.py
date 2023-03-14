@@ -2613,28 +2613,26 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
 
         if review['receiveLocation'] is None:
             review['receiveLocation'] = 0
-
+        b=0
         if data.find('bidpBidLocationList') != -1 :
-            if json_data['bidpBidLocationList'] is None:
-                b=0
-            else:
-                if json_data['bidpBidLocationList'][0]['districtName'] is None:
-                    b=json_data['bidpBidLocationList'][0]['provName']
-                elif json_data['bidpBidLocationList'][0]['provName'] is None:
-                    b=json_data['bidpBidLocationList'][0]['districtName']
-                else:
-                    b= json_data['bidpBidLocationList'][0]['districtName'] + ", " + json_data['bidpBidLocationList'][0]['provName']
+            if json_data['bidpBidLocationList'] is not None or json_data['bidpBidLocationList'] != []:
+                if json_data['bidpBidLocationList'][0] is not None or json_data['bidpBidLocationList'][0] != []:
+                    if json_data['bidpBidLocationList'][0]['districtName'] is None:
+                        b=json_data['bidpBidLocationList'][0]['provName']
+                    elif json_data['bidpBidLocationList'][0]['provName'] is None:
+                        b=json_data['bidpBidLocationList'][0]['districtName']
+                    else:
+                        b= json_data['bidpBidLocationList'][0]['districtName'] + ", " + json_data['bidpBidLocationList'][0]['provName']
 
         elif data.find('lsBidpBidLocationDTO') != -1:
-            if json_data['lsBidpBidLocationDTO'] is None:
-                b=0
-            else:
-                if json_data['lsBidpBidLocationDTO'][0]['districtName'] is None:
-                    b=json_data['lsBidpBidLocationDTO'][0]['provName']
-                elif json_data['lsBidpBidLocationDTO'][0]['provName'] is None:
-                    b=json_data['lsBidpBidLocationDTO'][0]['districtName']
-                else:
-                    b= json_data['lsBidpBidLocationDTO'][0]['districtName'] + ", " + json_data['lsBidpBidLocationDTO'][0]['provName']
+            if json_data['lsBidpBidLocationDTO'] is not None or json_data['lsBidpBidLocationDTO'] != []:
+                if json_data['lsBidpBidLocationDTO'][0] is not None or json_data['lsBidpBidLocationDTO'][0] != []:
+                    if json_data['lsBidpBidLocationDTO'][0]['districtName'] is None:
+                        b=json_data['lsBidpBidLocationDTO'][0]['provName']
+                    elif json_data['lsBidpBidLocationDTO'][0]['provName'] is None:
+                        b=json_data['lsBidpBidLocationDTO'][0]['districtName']
+                    else:
+                        b= json_data['lsBidpBidLocationDTO'][0]['districtName'] + ", " + json_data['lsBidpBidLocationDTO'][0]['provName']
 
         if review['bidCloseDate'] is None:
             review['bidCloseDate'] = 0
