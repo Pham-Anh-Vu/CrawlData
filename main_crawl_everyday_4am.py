@@ -2685,11 +2685,39 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         else:
             link2 ='https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + str(review['id'])
 
-        details.extend([review['notifyNo'],review['publicDate'],review['planNo'],review['planType'],review['planName'],review['bidName'],review['investorName'],review['procuringEntityName'],review['capitalDetail'],review['investField'],bidForm,v,review['isDomestic'],review['bidMode'],a,review['isInternet'],review['issueLocation'],fee,review['receiveLocation'],b,review['bidCloseDate'],review['bidOpenDate'],review['bidOpenLocation'],x,review['guaranteeValue'],review['guaranteeForm'],decisionNo,formatted_date,decisionAgency,link1,link2,codes])
-
-
-
-
+        details.extend([review['notifyNo'],
+                        review['publicDate'],
+                        review['planNo'],
+                        review['planType'],
+                        review['planName'],
+                        review['bidName'],
+                        review['investorName'],
+                        review['procuringEntityName'],
+                        review['capitalDetail'],
+                        review['investField'],
+                        bidForm,
+                        v,
+                        review['isDomestic'],
+                        review['bidMode'],
+                        a,
+                        review['isInternet'],
+                        review['issueLocation'],
+                        fee,
+                        review['receiveLocation'],
+                        b,
+                        review['bidCloseDate'],
+                        review['bidOpenDate'],
+                        review['bidOpenLocation'],
+                        x,
+                        review['guaranteeValue'],
+                        review['guaranteeForm'],
+                        decisionNo,
+                        formatted_date,
+                        decisionAgency,
+                        link1,
+                        link2,
+                        codes])
+        
         
         with open(''+folder_path1+'/TBMT_CDT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
