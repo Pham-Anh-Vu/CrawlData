@@ -29,7 +29,6 @@ with open('./areaType1.csv', newline='\n', encoding='utf-8') as csvfile:
         if row == []:
             continue
         areaType1.append(row)
-print(areaType1)
 
 areaType2 = []
 
@@ -1727,6 +1726,7 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                        review['planType'],
                         review['decisionFileName'],
                         link])
+        
         upData_KHLCNT(details=details)
 
         with open(''+folder_path1+'/KHLCNT.csv','a', encoding="utf-8") as f:
@@ -2617,7 +2617,7 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                 fee = str(review['feeValue'])+' VND'
 
         if review['receiveLocation'] is None:
-            review['receiveLocation'] = 0
+            review['receiveLocation'] = ''
 
         b=0
         if data.find('bidpBidLocationList') != -1 :
@@ -2691,6 +2691,11 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
             link2 = ''
         else:
             link2 ='https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + str(review['id'])
+        
+        listHangHoa=[]
+        if review['investField'] == 'Hàng hóa':
+            listx = crawlDetail_HangHoa(data=json_data)
+            listHangHoa.append(listx)
 
         details.extend([review['notifyNo'],
                         review['publicDate'],
@@ -2788,6 +2793,29 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         pass
 
     return
+
+def crawlDetail_HangHoa(data):
+    if data is not None:
+        if data['bidoInvBiddingDTO'] is not None:
+            review = data['bidoInvBiddingDTO']
+            for review1 in review:
+                if review1['formValue'][:8] == '{"shared':
+                    review_dic = json.loads(review1['formValue'])
+                    table = review_dic['Table']
+                    list_HH = []
+                    list_HH.clear()
+                    for hh in table:
+                        name = hh['name']
+                        uom = hh['uom']
+                        qty = hh['qty']
+                        fromDate = hh['fromDate']
+                        toDate = hh['toDate']
+                        description = hh['description']
+                        list_HH.append([name, uom, qty, fromDate,toDate,description])
+                    
+                    print(list_HH)
+                    return list_HH
+
 
 def CrawlDetail_TT_DA(code,details,session1,codes,folder_path1):
     cookies = {
