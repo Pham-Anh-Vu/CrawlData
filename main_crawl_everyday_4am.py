@@ -10,6 +10,7 @@ import json
 import connectdb
 from unidecode import unidecode
 from datetime import datetime, timedelta
+import upABN_db
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -26,6 +27,8 @@ areaType1 = []
 with open('./areaType1.csv', newline='\n', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
+        if row == []:
+            continue
         areaType1.append(row)
 
 areaType2 = []
@@ -33,6 +36,8 @@ areaType2 = []
 with open('./areaType2.csv', newline='\n', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
+        if row == []:
+            continue
         areaType2.append(row)
 
 areaType3 = []
@@ -40,6 +45,8 @@ areaType3 = []
 with open('./areaType3.csv', newline='\n', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
+        if row == []:
+            continue
         areaType3.append(row)
 
 class MyThread(threading.Thread):
@@ -2683,40 +2690,49 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         else:
             link2 ='https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + str(review['id'])
 
-        details.extend([review['notifyNo'],
-                        review['publicDate'],
-                        review['planNo'],
-                        review['planType'],
-                        review['planName'],
-                        review['bidName'],
-                        review['investorName'],
-                        review['procuringEntityName'],
-                        review['capitalDetail'],
-                        review['investField'],
-                        bidForm,
-                        v,
-                        review['isDomestic'],
-                        review['bidMode'],
-                        a,
-                        review['isInternet'],
-                        review['issueLocation'],
-                        fee,
-                        review['receiveLocation'],
-                        b,
-                        review['bidCloseDate'],
-                        review['bidOpenDate'],
-                        review['bidOpenLocation'],
-                        x,
-                        review['guaranteeValue'],
-                        review['guaranteeForm'],
-                        decisionNo,
-                        formatted_date,
-                        decisionAgency,
-                        link1,
+        details.extend([review['notifyNo'],#0
+                        review['publicDate'],#1
+                        review["notifyVersion"],#2
+                        review['planNo'],#3
+                        review['planType'],#4
+                        review['planName'],#5
+                        review['bidName'],#6
+                        review['investorName'],#7
+                        review['procuringEntityName'],#8
+                        review['capitalDetail'],#9
+                        review['investField'],#10
+                        bidForm,#11
+                        v,#12
+                        review['isDomestic'],#13
+                        review['bidMode'],#14
+                        a,#15
+                        review['isInternet'],#16
+                        review['issueLocation'],#17
+                        fee,#18
+                        review['receiveLocation'],#19
+                        b,#20
+                        review['bidCloseDate'],#21
+                        review['bidOpenDate'],#22
+                        review['bidOpenLocation'],#23
+                        x,#24
+                        review['guaranteeValue'],#25
+                        review['guaranteeForm'],#26
+                        decisionNo,#27
+                        formatted_date,#28
+                        decisionAgency,#29
+                        link1,#30
                         link2,
                         codes])
-        
-        
+
+        bidType = upABN_db.bid_type(review['investField'])
+        bidMethod = upABN_db.bid_method(review['isInternet'])
+        crea_at = upABN_db.timeUpd()
+        tim_close = upABN_db.time_close(review['bidCloseDate'])
+        time_post = upABN_db.time_post(review['publicDate'])
+        date_app = upABN_db.date_app(formatted_date)
+        if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == False:
+            upABN_db.upDataDB(3, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"], tim_close, time_post, date_app)
+
         with open(''+folder_path1+'/TBMT_CDT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)
@@ -5638,4 +5654,3 @@ except Exception as err:
     f.write("Chuong trinh bi loi")
     f.write('\n')
     f.close()
-    
