@@ -2484,23 +2484,21 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         data = json.dumps(json_data)
 
         if data.find('bidoNotifyContractorP') != -1 :
-            if json_data['bidoNotifyContractorP'] is None:
-                return
-            else:
+            if json_data['bidoNotifyContractorP'] is not None:
                 review=json_data['bidoNotifyContractorP']
 
-            if review['cPeriod'] is None:
-                review['cPeriod'] = 0
+                if review['cPeriod'] is None:
+                    review['cPeriod'] = ''
 
-            if review['cPeriodUnit'] is None:
-                review['cPeriodUnit'] = 0
+                if review['cPeriodUnit'] is None:
+                    review['cPeriodUnit'] = ''
 
-            a=str(review['cPeriod']) + str(review['cPeriodUnit'])
+                a=str(review['cPeriod']) + str(review['cPeriodUnit'])
 
-            if review['cType'] is None:
-                review['cType'] = 0
-            else:
-                v=review['cType']
+                if review['cType'] is None:
+                    review['cType'] = ''
+                else:
+                    v=review['cType']
 
         elif data.find('bidoNotifyContractorM') != -1:
             if json_data['bidoNotifyContractorM'] is None:
@@ -2509,29 +2507,29 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                 review=json_data['bidoNotifyContractorM']
 
             if review['contractPeriod'] is None:
-                review['contractPeriod'] = 0
+                review['contractPeriod'] = ''
 
             if review['contractPeriodUnit'] is None:
-                review['contractPeriodUnit'] = 0
+                review['contractPeriodUnit'] = ''
 
             a=str(review['contractPeriod']) + str(review['contractPeriodUnit'])
 
             if review['contractType'] is None:
-                review['contractType'] = 0
+                review['contractType'] = ''
             else:
                 v=review['contractType']
 
         if review['notifyNo'] is None:
-            review['notifyNo'] = 0
+            review['notifyNo'] = ''
 
         if review['publicDate'] is None:
-            review['publicDate'] = 0
+            review['publicDate'] = ''
 
         if review['planNo'] is None:
-            review['planNo'] = 0
+            review['planNo'] = ''
 
         if review['planType'] is None:
-            review['planType'] = 0
+            review['planType'] = ''
         else:
             if review['planType'] == 'DTPT':
                 review['planType'] = 'Chi đầu tư phát triển'
@@ -2539,22 +2537,30 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                 review['planType'] = 'Chi thường xuyên'
 
         if review['planName'] is None:
+<<<<<<< Updated upstream
             review['planName'] = 0
 
         if review['bidName'] is None:
             review['bidName'] = 0
 
+=======
+            review['planName'] = ''
+        
+        if review['bidName'] is None:
+            review['bidName'] = ''
+        
+>>>>>>> Stashed changes
         if review['investorName'] is None:
-            review['investorName'] = 0
+            review['investorName'] = ''
 
         if review['procuringEntityName'] is None:
-            review['procuringEntityName'] = 0
+            review['procuringEntityName'] = ''
 
         if review['capitalDetail'] is None:
-            review['capitalDetail'] = 0
+            review['capitalDetail'] = ''
 
         if review['investField'] is None:
-            review['investField'] = 0
+            review['investField'] = ''
         else:
             if review['investField'] == 'XL':
                 review['investField'] = 'Xây lắp'
@@ -2564,10 +2570,14 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                 review['investField'] = 'Phi tư vấn'
             elif review['investField'] == 'HH':
                 review['investField'] = 'Hàng hóa'
+<<<<<<< Updated upstream
 
+=======
+        
+        bidForm = ''        
+>>>>>>> Stashed changes
         if review['bidForm'] is None:
             review['bidForm'] = ''
-            bidForm = ''
         else:
             if review['bidForm'] == 'CHCT':
                 bidForm = 'Chào hàng cạnh tranh'
@@ -2588,7 +2598,7 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                 review['isDomestic'] = 'Quốc tế'
 
         if review['bidMode'] is None:
-            review['bidMode'] = 0
+            review['bidMode'] = ''
         else:
             if review['bidMode'] == '1_MTHS':
                 review['bidMode'] = 'Một giai đoạn một túi hồ sơ'
@@ -2604,7 +2614,8 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                 review['isInternet'] = 'Không qua mạng'
 
         if review['issueLocation'] is None:
-            review['issueLocation'] = 0
+            review['issueLocation'] = ''
+
         fee=0
         if review['isInternet'] == 1:
             if review['bidForm'] == 'DTRR' or review['bidForm'] == 'DTHC' or review['bidForm'] == 'MSTT':
@@ -2619,9 +2630,12 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
 
         if review['receiveLocation'] is None:
             review['receiveLocation'] = 0
+
         b=0
         if data.find('bidpBidLocationList') != -1 :
-            if json_data['bidpBidLocationList'] is not None or json_data['bidpBidLocationList'] != []:
+            if json_data['bidpBidLocationList'] is None or json_data['bidpBidLocationList'] == []:
+                b = ''
+            else:
                 if json_data['bidpBidLocationList'][0] is not None or json_data['bidpBidLocationList'][0] != []:
                     if json_data['bidpBidLocationList'][0]['districtName'] is None:
                         b=json_data['bidpBidLocationList'][0]['provName']
@@ -2641,39 +2655,46 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                         b= json_data['lsBidpBidLocationDTO'][0]['districtName'] + ", " + json_data['lsBidpBidLocationDTO'][0]['provName']
 
         if review['bidCloseDate'] is None:
+<<<<<<< Updated upstream
             review['bidCloseDate'] = 0
 
+=======
+            review['bidCloseDate'] = ''
+        
+>>>>>>> Stashed changes
         if review['bidOpenDate'] is None:
-            review['bidOpenDate'] = 0
+            review['bidOpenDate'] = ''
 
         if review['bidOpenLocation'] is None:
-            review['bidOpenLocation'] = 0
+            review['bidOpenLocation'] = ''
 
         if review['bidValidityPeriod'] is None:
-            review['bidValidityPeriod'] = 0
+            review['bidValidityPeriod'] = ''
 
         if review['bidValidityPeriodUnit'] is None:
-            review['bidValidityPeriodUnit'] = 0
-        x = str(review['bidValidityPeriod']) + str(review['bidValidityPeriodUnit'])
+            review['bidValidityPeriodUnit'] = ''
+        x = str(review['bidValidityPeriod']) +' '+str(review['bidValidityPeriodUnit'])
 
         if review['guaranteeValue'] is None:
-            review['guaranteeValue'] = 0
+            review['guaranteeValue'] = ''
 
         if review['guaranteeForm'] is None:
-            review['guaranteeForm'] = 0
+            review['guaranteeForm'] = ''
 
-        if json_data['bidInvContractorOfflineDTO']['decisionNo'] is None:
-            decisionNo = 0
-        else:
-            decisionNo = json_data['bidInvContractorOfflineDTO']['decisionNo']
+        decisionNo = ''
+        if data.find('bidInvContractorOfflineDTO') != -1:
+            if json_data['bidInvContractorOfflineDTO'] is not None:
+                if json_data['bidInvContractorOfflineDTO']['decisionNo'] is not None:
+                    decisionNo = json_data['bidInvContractorOfflineDTO']['decisionNo']
 
-        if json_data['bidInvContractorOfflineDTO']['decisionDate'] is None:
-            json_data['bidInvContractorOfflineDTO']['decisionDate'] = 0
-        else:
-            input_date=json_data['bidInvContractorOfflineDTO']['decisionDate']
-            date_obj = datetime.strptime(input_date, "%Y-%m-%dT%H:%M:%S.%f%z")
-            formatted_date = date_obj.strftime("%d/%m/%Y")
+                if json_data['bidInvContractorOfflineDTO']['decisionDate'] is None:
+                    json_data['bidInvContractorOfflineDTO']['decisionDate'] = ''
+                else:
+                    input_date=json_data['bidInvContractorOfflineDTO']['decisionDate']
+                    date_obj = datetime.strptime(input_date, "%Y-%m-%dT%H:%M:%S.%f%z")
+                    formatted_date = date_obj.strftime("%d/%m/%Y")
 
+<<<<<<< Updated upstream
         if json_data['bidInvContractorOfflineDTO']['decisionAgency'] is None:
             decisionAgency = 0
         else:
@@ -2683,9 +2704,20 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
             json_data['bidInvContractorOfflineDTO']['decisionFileId'] =0
         else:
             link1 = 'http://localhost:1234/api/download/file/browser/public?fileId='+ str(json_data['bidInvContractorOfflineDTO']['decisionFileId'])
+=======
+                if json_data['bidInvContractorOfflineDTO']['decisionAgency'] is None:
+                    decisionAgency = ''
+                else:
+                    decisionAgency = json_data['bidInvContractorOfflineDTO']['decisionAgency']
+                
+                if json_data['bidInvContractorOfflineDTO']['decisionFileId'] is None:
+                    json_data['bidInvContractorOfflineDTO']['decisionFileId'] =''
+                else:
+                    link1 = 'http://localhost:1234/api/download/file/browser/public?fileId='+ str(json_data['bidInvContractorOfflineDTO']['decisionFileId'])
+>>>>>>> Stashed changes
 
         if review['id'] is None:
-            link2 = 0
+            link2 = ''
         else:
             link2 ='https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + str(review['id'])
 
