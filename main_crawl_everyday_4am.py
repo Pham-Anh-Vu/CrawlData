@@ -540,15 +540,15 @@ def CrawlDetailNhaThau(code,details,session1,codes,folder_path1):
         myresult = cur.fetchall()
         status ='Đã duyệt'
 
-
         if myresult == []:
-            sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, contractor, created_at,updated_at,status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(),%s)"
-            val = (company_name, company_address,company_website,tax_code,operation_date,contractor,status)
+            sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, contractor, created_at, updated_at, status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(),%s)"
+            val = (company_name, company_address, company_website, tax_code, operation_date, contractor, status)
             cur.execute(sql, val)
             conn.commit()
             job_company_profile_id=cur.lastrowid
+
         else:
-            sql = "UPDATE pccc_app_job_company_profiles SET contractor = 1 AND updated_at = NOW() WHERE company_name = %s"
+            sql = "UPDATE pccc_app_job_company_profiles SET contractor = 1, updated_at = NOW() WHERE company_name = %s"
             val = (company_name,)
             cur.execute(sql, val)
             conn.commit()
@@ -1084,7 +1084,7 @@ def CrawlDetailBenMoiThau(code,details,session1,codes,folder_path1):
         if myresult == []:
             status = 'Đã duyệt'
             sql = "INSERT INTO pccc_app_job_company_profiles (company_name, company_address, company_website, tax_code, operation_date, investor_is_approved,created_at,updated_at,status) VALUES (%s, %s, %s, %s, %s, %s, NOW(),NOW(), %s)"
-            val = (company_name, company_address,company_website,tax_code,operation_date,investor_is_approved,status)
+            val = (company_name, company_address, company_website, tax_code, operation_date, investor_is_approved, status)
             cur.execute(sql, val)
             conn.commit()
         else:
@@ -1682,8 +1682,9 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
         if review['publicDate'] is None:
             review['publicDate'] =''
         else:
+            review['publicDate'] = review['publicDate'][:19]
             #Tạo đối tượng datetime từ chuỗi thời gian ban đầu
-            review['publicDate'] = datetime.strptime(review['publicDate'], '%Y-%m-%dT%H:%M:%S.%f')
+            review['publicDate'] = datetime.strptime(review['publicDate'], '%Y-%m-%dT%H:%M:%S')
 
             # Chuyển đổi đối tượng datetime sang chuỗi ngày tháng mong muốn
             review['publicDate'] = review['publicDate'].strftime('%Y-%m-%d %H:%M:%S')
@@ -1692,9 +1693,15 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
             review['planType'] = ''
 
         if review['decisionFileId'] is None:
-            a =0
+            review['decisionFileId'] = ''
+            link = ''
         else:
-            a = 'http://localhost:1234/api/download/file/browser/public?fileId='+review['decisionFileId']
+            link = 'http://localhost:1234/api/download/file/browser/public?fileId=' + review['decisionFileId']
+
+        if review['decisionFileName'] is None:
+            review['decisionFileName'] = ''
+        
+        a=0
 
         details.extend([review['planNo'],
                         review['name'],
@@ -1717,8 +1724,9 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
                         nhap1,
                         codes,
                         review['publicDate'],
-                        review['planType']])
-
+                       review['planType'],
+                        review['decisionFileName'],
+                        link])
         upData_KHLCNT(details=details)
 
         with open(''+folder_path1+'/KHLCNT.csv','a', encoding="utf-8") as f:
@@ -1994,27 +2002,172 @@ def upData_KHLCNT(details):
             sql1 = "INSERT INTO pccc_app_bidding_news_details (`key`, sub_title, title, value, subject_id, subject_type, news_id, type_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW());"
             cur.executemany(sql1, records)
             conn.commit()
-
-            for tbmt in details[18]:
-                lcnt_field =  tbmt[4]
-                package_name = tbmt[1]
-                bid_price = tbmt[13]
-                bid_price = '{:,}'.format(bid_price).replace(',', '.')
-                capital_detail = tbmt[9]
-                form_of_lcnt = tbmt[6] + ', ' + tbmt[3].lower() +' '+ tbmt[5].lower()+', '+tbmt[2].lower()
-                lcnt_method = tbmt[7]
-                time_start_lcnt = tbmt[11]
-                contract_type = tbmt[8]
-                duration_of_contact = tbmt[12]
-                execution_address = tbmt[14]
-                number_tbml_tbmst = tbmt[15]
-
-                sql= "INSERT INTO pccc_app_bidding_plan_package (news_id, lcnt_field, package_name, bid_price, capital_detail, form_of_lcnt, lcnt_method, time_start_lcnt, contract_type, duration_of_contract, created_at, updated_at, execution_address, number_tbml_tbmst) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s, %s)"
-                val=(news_id,lcnt_field,package_name,bid_price,capital_detail,form_of_lcnt,lcnt_method,time_start_lcnt, contract_type, duration_of_contact, execution_address, number_tbml_tbmst)
-                cur.execute(sql, val)
-                conn.commit()
+            
         else:
-            return
+
+            titles1 = 'Số KHLCNT'
+
+            titles2 = 'Loại thông báo'
+
+            titles3 = 'Hình thức thông báo'
+
+            titles4 = 'Tên KHLCNT'
+
+            titles5 = 'Bên mời thầu'
+
+            titles6 = 'Phân loại'
+
+            titles7 = 'Phạm vi điều chỉnh'
+
+            #titles8 = 'Trạng thái quyết định'
+
+            titles9 = 'Ngày phê duyệt KHLCNT'
+
+            titles10 = 'Số QĐ phê duyệt KHLCNT'
+
+            titles11 = 'Giá dự toán'
+
+            titles12 = 'Ngày đăng tải'
+
+            titles13 = 'Thông báo liên quan'
+
+            titles14 = 'Quyết định phê duyệt'
+        
+            phan_loai = 'Hoạt động chi thường xuyên'
+
+            key1=titles1.strip().lower().replace(' ', '-')
+            key1 = unidecode(key1)
+
+            key2=titles2.strip().lower().replace(' ', '-')
+            key2 = unidecode(key2)
+            
+            key3=titles3.strip().lower().replace(' ', '-')
+            key3 = unidecode(key3)
+
+            key4=titles4.strip().lower().replace(' ', '-')
+            key4 = unidecode(key4)
+
+            key5=titles5.strip().lower().replace(' ', '-')
+            key5 = unidecode(key5)
+
+            key6=titles6.strip().lower().replace(' ', '-')
+            key6 = unidecode(key6)
+
+            key7=titles7.strip().lower().replace(' ', '-')
+            key7 = unidecode(key7)
+
+            #key8=titles8.strip().lower().replace(' ', '-')
+            #key8 = unidecode(key8)
+
+            key9=titles9.strip().lower().replace(' ', '-')
+            key9 = unidecode(key9)
+
+            key10=titles10.strip().lower().replace(' ', '-')
+            key10 = unidecode(key10)
+
+            key11=titles11.strip().lower().replace(' ', '-')
+            key11 = unidecode(key11)
+
+            key12=titles12.strip().lower().replace(' ', '-')
+            key12 = unidecode(key12)
+
+            key13=titles13.strip().lower().replace(' ', '-')
+            key13 = unidecode(key13)
+
+            key14=titles14.strip().lower().replace(' ', '-')
+            key14 = unidecode(key14)
+
+            value1 = so_khlcnt
+        
+            value2 = loai_thong_bao
+
+            value3 = hinh_thuc_thong_bao
+
+            value4 = ten_khlcnt
+
+            value5 = ten_chu_dau_tu
+
+            value6 = phan_loai
+ 
+            value7 = pham_vi_dieu_chinh
+        
+            #value8 = trang_thai_quyet_dinh
+        
+            value9 = ngay_phe_duyet_khlcnt
+        
+            value10 = so_qd_phe_duyet_khlcnt
+
+            value11 = tong_muc_dau_tu
+        
+            value12 = ngay_dang_tai
+        
+            value13 = thong_bao_lien_quan
+        
+            value14 = quyet_dinh_phe_duyet
+
+            subject_id = None
+            subject_type = None
+
+            records = [
+                (key1, sub_title, titles1, value1, subject_id, subject_type, news_id, type_id),
+                (key2, sub_title, titles2, value2, subject_id, subject_type, news_id, type_id),
+                (key3, sub_title, titles3, value3, subject_id, subject_type, news_id, type_id),
+                (key4, sub_title, titles4, value4, subject_id, subject_type, news_id, type_id),
+                (key5, sub_title, titles5, value5, subject_id_1, subject_type_1, news_id, type_id),
+                (key6, sub_title, titles6, value6, subject_id, subject_type, news_id, type_id),
+                (key7, sub_title, titles7, value7, subject_id, subject_type, news_id, type_id),
+                
+                (key9, sub_title, titles9, value9, subject_id, subject_type, news_id, type_id),
+                (key10, sub_title, titles10, value10, subject_id, subject_type, news_id, type_id),
+                (key11, sub_title, titles11, value11, subject_id, subject_type, news_id, type_id),
+                (key12, sub_title, titles12, value12, subject_id, subject_type, news_id, type_id),
+                (key13, sub_title, titles13, value13, subject_id, subject_type, news_id, type_id),
+                (key14, sub_title, titles14, value14, subject_id, subject_type, news_id, type_id)]
+
+            sql1 = "INSERT INTO pccc_app_bidding_news_details (`key`, sub_title, title, value, subject_id, subject_type, news_id, type_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW());"
+            cur.executemany(sql1, records)
+            conn.commit()
+            
+        id_news_detail_file = cur.lastrowid
+        object_id = id_news_detail_file
+
+        file_name = details[22]
+
+        link_file = details[23]
+
+        object_type = 'App\Models\BiddingNewsDetail'
+
+        is_big_file = 1
+
+        sql = "INSERT INTO pccc_app_bidding_news_files (object_type, object_id, file_name, link_muasamcong, created_at, updated_at, is_big_file) VALUES (%s, %s, %s, %s, NOW(), NOW(), %s) "
+        val = (object_type, object_id, file_name, link_file, is_big_file)
+        cur.execute(sql, val)
+        conn.commit()
+        
+
+        for tbmt in details[18]:
+            lcnt_field =  tbmt[4]
+            package_name = tbmt[1].replace('\n', '').replace('\t', '')
+            package_name = package_name[:191]
+            
+            bid_price = tbmt[13]
+            bid_price = '{:,}'.format(bid_price).replace(',', '.')
+
+            capital_detail = tbmt[9].replace('\n', '').replace('\t', '')
+            capital_detail = capital_detail[:191]
+
+            form_of_lcnt = tbmt[6] + ', ' + tbmt[3].lower() +' '+ tbmt[5].lower()+', '+tbmt[2].lower()
+            lcnt_method = tbmt[7]
+            time_start_lcnt = tbmt[11]
+            contract_type = tbmt[8]
+            duration_of_contact = tbmt[12]
+            execution_address = tbmt[14]
+            number_tbml_tbmst = tbmt[15]
+
+            sql= "INSERT INTO pccc_app_bidding_plan_package (news_id, lcnt_field, package_name, bid_price, capital_detail, form_of_lcnt, lcnt_method, time_start_lcnt, contract_type, duration_of_contract, created_at, updated_at, execution_address, number_tbml_tbmst) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW(), %s, %s)"
+            val=(news_id,lcnt_field,package_name,bid_price,capital_detail,form_of_lcnt,lcnt_method,time_start_lcnt, contract_type, duration_of_contact, execution_address, number_tbml_tbmst)
+            cur.execute(sql, val)
+            conn.commit()
 
     else:
         return
@@ -2068,13 +2221,16 @@ def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
             verify= False,
         )
         reviews = response.json()
-
+        
+        if reviews is None:
+            return
+            
         if reviews['processApply'] is None:
             reviews['processApply'] = ''
 
         if reviews['bidName'] is None:
             reviews['bidName'] = ''
-
+    
         if reviews['isInternet'] is None:
             reviews['isInternet'] = ''
         else:
@@ -2463,28 +2619,26 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
 
         if review['receiveLocation'] is None:
             review['receiveLocation'] = 0
-
+        b=0
         if data.find('bidpBidLocationList') != -1 :
-            if json_data['bidpBidLocationList'] is None:
-                b=0
-            else:
-                if json_data['bidpBidLocationList'][0]['districtName'] is None:
-                    b=json_data['bidpBidLocationList'][0]['provName']
-                elif json_data['bidpBidLocationList'][0]['provName'] is None:
-                    b=json_data['bidpBidLocationList'][0]['districtName']
-                else:
-                    b= json_data['bidpBidLocationList'][0]['districtName'] + ", " + json_data['bidpBidLocationList'][0]['provName']
+            if json_data['bidpBidLocationList'] is not None or json_data['bidpBidLocationList'] != []:
+                if json_data['bidpBidLocationList'][0] is not None or json_data['bidpBidLocationList'][0] != []:
+                    if json_data['bidpBidLocationList'][0]['districtName'] is None:
+                        b=json_data['bidpBidLocationList'][0]['provName']
+                    elif json_data['bidpBidLocationList'][0]['provName'] is None:
+                        b=json_data['bidpBidLocationList'][0]['districtName']
+                    else:
+                        b= json_data['bidpBidLocationList'][0]['districtName'] + ", " + json_data['bidpBidLocationList'][0]['provName']
 
         elif data.find('lsBidpBidLocationDTO') != -1:
-            if json_data['lsBidpBidLocationDTO'] is None:
-                b=0
-            else:
-                if json_data['lsBidpBidLocationDTO'][0]['districtName'] is None:
-                    b=json_data['lsBidpBidLocationDTO'][0]['provName']
-                elif json_data['lsBidpBidLocationDTO'][0]['provName'] is None:
-                    b=json_data['lsBidpBidLocationDTO'][0]['districtName']
-                else:
-                    b= json_data['lsBidpBidLocationDTO'][0]['districtName'] + ", " + json_data['lsBidpBidLocationDTO'][0]['provName']
+            if json_data['lsBidpBidLocationDTO'] is not None or json_data['lsBidpBidLocationDTO'] != []:
+                if json_data['lsBidpBidLocationDTO'][0] is not None or json_data['lsBidpBidLocationDTO'][0] != []:
+                    if json_data['lsBidpBidLocationDTO'][0]['districtName'] is None:
+                        b=json_data['lsBidpBidLocationDTO'][0]['provName']
+                    elif json_data['lsBidpBidLocationDTO'][0]['provName'] is None:
+                        b=json_data['lsBidpBidLocationDTO'][0]['districtName']
+                    else:
+                        b= json_data['lsBidpBidLocationDTO'][0]['districtName'] + ", " + json_data['lsBidpBidLocationDTO'][0]['provName']
 
         if review['bidCloseDate'] is None:
             review['bidCloseDate'] = 0
@@ -2535,12 +2689,40 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         else:
             link2 ='https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + str(review['id'])
 
-        details.extend([review['notifyNo'],review['publicDate'],review['planNo'],review['planType'],review['planName'],review['bidName'],review['investorName'],review['procuringEntityName'],review['capitalDetail'],review['investField'],bidForm,v,review['isDomestic'],review['bidMode'],a,review['isInternet'],review['issueLocation'],fee,review['receiveLocation'],b,review['bidCloseDate'],review['bidOpenDate'],review['bidOpenLocation'],x,review['guaranteeValue'],review['guaranteeForm'],decisionNo,formatted_date,decisionAgency,link1,link2,codes])
-
-
-
-
-
+        details.extend([review['notifyNo'],
+                        review['publicDate'],
+                        review['planNo'],
+                        review['planType'],
+                        review['planName'],
+                        review['bidName'],
+                        review['investorName'],
+                        review['procuringEntityName'],
+                        review['capitalDetail'],
+                        review['investField'],
+                        bidForm,
+                        v,
+                        review['isDomestic'],
+                        review['bidMode'],
+                        a,
+                        review['isInternet'],
+                        review['issueLocation'],
+                        fee,
+                        review['receiveLocation'],
+                        b,
+                        review['bidCloseDate'],
+                        review['bidOpenDate'],
+                        review['bidOpenLocation'],
+                        x,
+                        review['guaranteeValue'],
+                        review['guaranteeForm'],
+                        decisionNo,
+                        formatted_date,
+                        decisionAgency,
+                        link1,
+                        link2,
+                        codes])
+        
+        
         with open(''+folder_path1+'/TBMT_CDT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)
