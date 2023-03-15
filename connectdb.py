@@ -1,6 +1,11 @@
-import mariadb
+# import mariadb
 import sys
+
+# import mariadb as mariadb
+import mariadb
+import mysql.connector
 def connect():
+
     try:
         conn = mariadb.connect(
             user="root",
