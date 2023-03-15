@@ -2537,19 +2537,11 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                 review['planType'] = 'Chi thường xuyên'
 
         if review['planName'] is None:
-<<<<<<< Updated upstream
-            review['planName'] = 0
-
-        if review['bidName'] is None:
-            review['bidName'] = 0
-
-=======
             review['planName'] = ''
         
         if review['bidName'] is None:
             review['bidName'] = ''
         
->>>>>>> Stashed changes
         if review['investorName'] is None:
             review['investorName'] = ''
 
@@ -2570,12 +2562,8 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                 review['investField'] = 'Phi tư vấn'
             elif review['investField'] == 'HH':
                 review['investField'] = 'Hàng hóa'
-<<<<<<< Updated upstream
-
-=======
         
         bidForm = ''        
->>>>>>> Stashed changes
         if review['bidForm'] is None:
             review['bidForm'] = ''
         else:
@@ -2655,13 +2643,8 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                         b= json_data['lsBidpBidLocationDTO'][0]['districtName'] + ", " + json_data['lsBidpBidLocationDTO'][0]['provName']
 
         if review['bidCloseDate'] is None:
-<<<<<<< Updated upstream
-            review['bidCloseDate'] = 0
-
-=======
             review['bidCloseDate'] = ''
         
->>>>>>> Stashed changes
         if review['bidOpenDate'] is None:
             review['bidOpenDate'] = ''
 
@@ -2694,17 +2677,6 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                     date_obj = datetime.strptime(input_date, "%Y-%m-%dT%H:%M:%S.%f%z")
                     formatted_date = date_obj.strftime("%d/%m/%Y")
 
-<<<<<<< Updated upstream
-        if json_data['bidInvContractorOfflineDTO']['decisionAgency'] is None:
-            decisionAgency = 0
-        else:
-            decisionAgency = json_data['bidInvContractorOfflineDTO']['decisionAgency']
-
-        if json_data['bidInvContractorOfflineDTO']['decisionFileId'] is None:
-            json_data['bidInvContractorOfflineDTO']['decisionFileId'] =0
-        else:
-            link1 = 'http://localhost:1234/api/download/file/browser/public?fileId='+ str(json_data['bidInvContractorOfflineDTO']['decisionFileId'])
-=======
                 if json_data['bidInvContractorOfflineDTO']['decisionAgency'] is None:
                     decisionAgency = ''
                 else:
@@ -2714,7 +2686,6 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                     json_data['bidInvContractorOfflineDTO']['decisionFileId'] =''
                 else:
                     link1 = 'http://localhost:1234/api/download/file/browser/public?fileId='+ str(json_data['bidInvContractorOfflineDTO']['decisionFileId'])
->>>>>>> Stashed changes
 
         if review['id'] is None:
             link2 = ''
