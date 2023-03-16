@@ -2737,7 +2737,9 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         tim_close = upABN_db.time_close(review['bidCloseDate'])
         time_post = upABN_db.time_post(review['publicDate'])
         date_app = upABN_db.date_app(formatted_date)
-        if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == False:
+
+        if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
+            print(1)
             upABN_db.upDataDB(3, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"], tim_close, time_post, date_app)
 
         with open(''+folder_path1+'/TBMT_CDT.csv','a', encoding="utf-8") as f:
