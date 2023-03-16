@@ -2681,21 +2681,83 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                     decisionAgency = ''
                 else:
                     decisionAgency = json_data['bidInvContractorOfflineDTO']['decisionAgency']
-                
+                if json_data['bidInvContractorOfflineDTO']['decisionFileName'] is None:
+                    json_data['bidInvContractorOfflineDTO']['decisionFileName'] = ''
+                else:
+                    decisionFileName = json_data['bidInvContractorOfflineDTO']['decisionFileName']
                 if json_data['bidInvContractorOfflineDTO']['decisionFileId'] is None:
                     json_data['bidInvContractorOfflineDTO']['decisionFileId'] =''
                 else:
                     link1 = 'http://localhost:1234/api/download/file/browser/public?fileId='+ str(json_data['bidInvContractorOfflineDTO']['decisionFileId'])
-
+    
         if review['id'] is None:
             link2 = ''
         else:
             link2 ='https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + str(review['id'])
         
         listHangHoa=[]
-        if review['investField'] == 'Hàng hóa':
-            listx = crawlDetail_HangHoa(data=json_data)
-            listHangHoa.append(listx)
+        listHangHoa.clear()
+        if review['investField'] == 'Hàng hóa' or review['investField'] == 'HH':
+            #listx = crawlDetail_HangHoa(data=json_data)
+            listx = [1]
+            listHangHoa.extend(listx)
+
+        listFileHSMT=[]
+        listFileHSMT.clear()
+
+        if review['isInternet'] == 'Qua mạng' or review['isInternet'] == '1' or review['isInternet'] == 1:
+            list_file = []
+            list_file.clear()
+            if json_data is not None:
+                if json_data['bidaInvChapterConfList'] is None or json_data['bidaInvChapterConfList'] == []:
+                    listFileHSMT=[]
+                else: 
+                    reviewx = json_data['bidaInvChapterConfList']
+                    for review1 in reviewx:
+                        if review1['lev'] is not None:
+                            if review1['lev'] <= 1:
+                                idFile = review['id']
+                                lev = review1['lev']
+                                code = review1['code']
+                                pcode = review1['pcode']
+                                name = review1['name']
+                                orderIndex = review1['orderIndex']
+                                if lev == 0:
+                                    if orderIndex == 0:
+                                        stt = 0
+                                    if orderIndex == 1:
+                                        stt = 7
+                                    if orderIndex == 2:
+                                        stt = 9
+                                    
+                                if lev == 1:
+                                    if pcode == 'P1':
+                                        if orderIndex == 0:
+                                            stt = 1
+                                        elif orderIndex == 1:
+                                            stt = 2
+                                        elif orderIndex == 2:
+                                            stt = 3
+                                        elif orderIndex == 3:
+                                            stt = 4
+                                        elif orderIndex == 4:
+                                            stt = 5
+                                        elif orderIndex == 5:
+                                            stt = 6
+                                    if pcode == 'P2':
+                                        if orderIndex == 0:
+                                            stt = 8
+                                    if pcode == 'P3':
+                                        if orderIndex == 0:
+                                            stt = 10
+                                        elif orderIndex == 1:
+                                            stt = 11
+                                        elif orderIndex == 2:
+                                            stt = 12 
+                                list_file.append([stt,idFile, lev, name, code, pcode, orderIndex])
+            listFileHSMT = []
+            listFileHSMT.clear()
+            listFileHSMT = sorted(list_file, key=lambda list_file: list_file[0])
 
         details.extend([review['notifyNo'],
                         review['publicDate'],
@@ -2728,8 +2790,10 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                         decisionAgency,
                         link1,
                         link2,
-                        codes])
-        
+                        codes,
+                        listHangHoa,
+                        listFileHSMT,
+                        decisionFileName])
         
         with open(''+folder_path1+'/TBMT_CDT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -2795,6 +2859,8 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
     return
 
 def crawlDetail_HangHoa(data):
+    list_HH = []
+    list_HH.clear()
     if data is not None:
         if data['bidoInvBiddingDTO'] is not None:
             review = data['bidoInvBiddingDTO']
@@ -2802,8 +2868,6 @@ def crawlDetail_HangHoa(data):
                 if review1['formValue'][:8] == '{"shared':
                     review_dic = json.loads(review1['formValue'])
                     table = review_dic['Table']
-                    list_HH = []
-                    list_HH.clear()
                     for hh in table:
                         name = hh['name']
                         uom = hh['uom']
@@ -2812,10 +2876,7 @@ def crawlDetail_HangHoa(data):
                         toDate = hh['toDate']
                         description = hh['description']
                         list_HH.append([name, uom, qty, fromDate,toDate,description])
-                    
-                    print(list_HH)
-                    return list_HH
-
+    return list_HH
 
 def CrawlDetail_TT_DA(code,details,session1,codes,folder_path1):
     cookies = {
@@ -3227,12 +3288,13 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
 
            #elif code[4] == 'KCNTTT':
                 #if code[6] == 1:
-                #CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
+                    #CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
                 #elif code[6] == 0:
                     #CrawDetail_DT_KCNTTT_KQM(inputResultId=inputResultId,details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
             if code[4] == 'DXT':
-                CrawlDetail_DT_DXT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
+                if code[6] == 1:
+                    CrawlDetail_DT_DXT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
 
 
