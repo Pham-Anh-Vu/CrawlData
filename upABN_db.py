@@ -67,7 +67,9 @@ def upDataDB(type_id, bid_type, bid_method, aujusted_limited, created_at, update
           f"VALUES ('{type_id}', '{bid_type}', '{bid_method}', '{aujusted_limited}', '{created_at}','{updated_at}', '{bid_number}', '{bid_turn_no}', '{time_bid_closing}', '{time_posting}', '{date_of_approval}');"
     mycursor.execute(sql)
     conn.commit()
-
+    news_id = mycursor.lastrowid
+    news_id = int(news_id)
+    return news_id
 def yesterday():
     yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
     # yesterday = yesterday.date()

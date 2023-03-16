@@ -10,6 +10,9 @@ import json
 import connectdb
 from unidecode import unidecode
 from datetime import datetime, timedelta
+
+import upABNDetail_db
+import upABNFiles_db
 import upABN_db
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -2759,43 +2762,67 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
             listFileHSMT = []
             listFileHSMT.clear()
             listFileHSMT = sorted(list_file, key=lambda list_file: list_file[0])
+        if review['bidPrice'] is None:
+            review['bidPrice'] = ''
 
-        details.extend([review['notifyNo'],
-                        review['publicDate'],
-                        review['planNo'],
-                        review['planType'],
-                        review['planName'],
-                        review['bidName'],
-                        review['investorName'],
-                        review['procuringEntityName'],
-                        review['capitalDetail'],
-                        review['investField'],
-                        bidForm,
-                        v,
-                        review['isDomestic'],
-                        review['bidMode'],
-                        a,
-                        review['isInternet'],
-                        review['issueLocation'],
-                        fee,
-                        review['receiveLocation'],
-                        b,
-                        review['bidCloseDate'],
-                        review['bidOpenDate'],
-                        review['bidOpenLocation'],
-                        x,
-                        review['guaranteeValue'],
-                        review['guaranteeForm'],
-                        decisionNo,
-                        formatted_date,
-                        decisionAgency,
-                        link1,
-                        link2,
-                        codes,
-                        listHangHoa,
-                        listFileHSMT,
-                        decisionFileName])
-        
+        details.extend([review['notifyNo'],#0
+                        review['publicDate'],#1
+                        review["notifyVersion"],#2
+                        review['planNo'],#3
+                        review['planType'],#4
+                        review['planName'],#5
+                        review['bidName'],#6
+                        review['investorName'],#7
+                        review['procuringEntityName'],#8
+                        review['capitalDetail'],#9
+                        review['investField'],#10
+                        bidForm,#11
+                        v,#12
+                        review['isDomestic'],#13
+                        review['bidMode'],#14
+                        a,#15
+                        review['isInternet'],#16
+                        review['issueLocation'],#17
+                        fee,#18
+                        review['receiveLocation'],#19
+                        b,#20
+                        review['bidCloseDate'],#21
+                        review['bidOpenDate'],#22
+                        review['bidOpenLocation'],#23
+                        x,#24
+                        review['guaranteeValue'],#25
+                        review['bidPrice'],#26
+                        review['guaranteeForm'],#27
+                        decisionNo,#28
+                        formatted_date,#29
+                        decisionAgency,#30
+                        link1,#31
+                        link2,#32
+                        codes,#33
+                        listHangHoa,#34
+                        listFileHSMT,#35
+                        decisionFileName])#36
+
+        bidType = upABN_db.bid_type(review['investField'])
+        bidMethod = upABN_db.bid_method(review['isInternet'])
+        crea_at = upABN_db.timeUpd()
+        tim_close = upABN_db.time_close(review['bidCloseDate'])
+        time_post = upABN_db.time_post(review['publicDate'])
+        date_app = upABN_db.date_app(formatted_date)
+        news_id = 0
+        if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
+
+            news_id = upABN_db.upDataDB(3, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"],
+                              tim_close, time_post, date_app)
+
+            upABNDetail_db.upData(details, news_id)
+
+            conn = connectdb.connect()
+            cur = conn.cursor()
+            cur.execute(f"SELECT * FROM pccc_app_bidding_news_details WHERE `key` = 'ho-so-moi-thau' AND news_id = '{news_id}'")
+            result = int(cur.fetchone()[0])
+            upABNFiles_db.upData(details, result)
+
         with open(''+folder_path1+'/TBMT_CDT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)
