@@ -10,6 +10,7 @@ import json
 import connectdb
 from unidecode import unidecode
 from datetime import datetime, timedelta
+import upABN_db
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
