@@ -2713,6 +2713,7 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
             list_file = []
             list_file.clear()
             if json_data is not None:
+                stt = ''
                 if json_data['bidaInvChapterConfList'] is None or json_data['bidaInvChapterConfList'] == []:
                     listFileHSMT=[]
                 else: 
@@ -2853,7 +2854,6 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         session1.close()
         session1 = requests.Session()
         details.clear()
-
         pass
 
     except requests.Timeout as err:
@@ -3322,9 +3322,7 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
 
             if code[4] == 'DXT':
                 if code[6] == 1:
-                    CrawlDetail_DT_DXT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
-
-
+                    CrawlDetail_DT_DXT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1])
 
         codes.clear()
 
@@ -3393,7 +3391,7 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
 
     return
 
-def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
+def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
     cookies = {
         'COOKIE_SUPPORT': 'true',
         'GUEST_LANGUAGE_ID': 'vi_VN',
@@ -3490,17 +3488,30 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
         json_data2=response2.json()
         review2=json_data2
 
+        data3 = '{"id":"'+code+'"}'
+        response3 = session.post(
+            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/lcnt/bid-notify-contractor-out/get-by-id',
+            cookies=cookies,
+            headers=headers,
+            data=data,
+            allow_redirects=False,
+            verify= False,
+        )
+        json_data3=response3.json()
+
         nhap1=[0]
         nhap1.clear()
         dem=0
+
         if review2 is None:
-            nhap1 = [0]
+            return
         else:
             if review2['bidSubmissionByContractorViewResponse'] is None:
-                nhap1=[0]
+                nhap1, dem = CrawlDetail_DT_DXT_2(code=code,session1=session1,codes=codes,folder_path1=folder_path1,notify_no=notify_no)
+                print(nhap1)
             else:
                 if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is None:
-                    nhap1=[0]
+                    return
                 else:
                     for nhathau in review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList']:
                         if nhathau['contractorCode'] is None:
@@ -3533,11 +3544,21 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
                         if nhathau['contractPeriodDTUnit'] is None:
                             nhathau['contractPeriodDTUnit'] = 0
 
-                        nhap1.append([nhathau['contractorCode'],nhathau['contractorName'],nhathau['bidPrice'],nhathau['alternativeTech'],nhathau['bidFinalPrice'],nhathau['bidValidityNum'],nhathau['bidGuarantee'],nhathau['bidGuaranteeValidity'],str(nhathau['contractPeriodDT'])+nhathau['contractPeriodDTUnit']])
+                        nhap1.append([nhathau['contractorCode'],
+                                      nhathau['contractorName'],
+                                      nhathau['bidPrice'],
+                                      nhathau['alternativeTech'],
+                                      nhathau['bidFinalPrice'],
+                                      nhathau['bidValidityNum'],
+                                      nhathau['bidGuarantee'],
+                                      nhathau['bidGuaranteeValidity'],
+                                      str(nhathau['contractPeriodDT'])+nhathau['contractPeriodDTUnit']])
                         dem=dem+1
 
         review=0
         data = json.dumps(json_data)
+        check = 0
+
         if json_data is not None:
             data = json.dumps(json_data)
             if data.find('bidoNotifyContractorP') != -1 :
@@ -3552,6 +3573,8 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
                         v=review['cType']
                     else:
                         v = 0
+                else:
+                    check = 1
 
             elif data.find('bidoNotifyContractorM') != -1:
                 if json_data['bidoNotifyContractorM'] is not None:
@@ -3565,179 +3588,210 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
                         v=review['contractType']
                     else:
                         v=0
-        else:
-            return
+                else:
+                    check = 1
 
+        if check == 1:
+            json_data = json_data3
+            if json_data is not None:
+                data = json.dumps(json_data)
+                if data.find('bidoNotifyContractorP') != -1 :
+                    if json_data['bidoNotifyContractorP'] is not None:
+                        review = json_data['bidoNotifyContractorP']
+                        if review['cPeriod'] is None:
+                            review['cPeriod'] = 0
+                        if review['cPeriodUnit'] is None:
+                            review['cPeriodUnit'] = 0
+                        a=str(review['cPeriod']) + str(review['cPeriodUnit'])
+                        if review['cType'] is not None:
+                            v=review['cType']
+                        else:
+                            v = 0
+                    else:
+                        check = 1
+
+                elif data.find('bidoNotifyContractorM') != -1:
+                    if json_data['bidoNotifyContractorM'] is not None:
+                        review = json_data['bidoNotifyContractorM']
+                        if review['contractPeriod'] is None:
+                            review['contractPeriod'] = 0
+                        if review['contractPeriodUnit'] is None:
+                            review['contractPeriodUnit'] = 0
+                        a=str(review['contractPeriod']) + str(review['contractPeriodUnit'])
+                        if review['contractType'] is not None:
+                            v=review['contractType']
+                        else:
+                            v=0
+                    else:
+                        check = 1
+        
         fee=0
         if review['bidForm'] is None:
-            review['bidForm'] = 0
+            review['bidForm'] = ''
+
         if review['isInternet'] is None:
-            review['isInternet'] = 0
-        else :
-            if review['isInternet'] == 1:
-                if review['bidForm'] == 'DTRR' or review['bidForm'] == 'DTHC' or review['bidForm'] == 'MSTT':
-                    fee= '330,000 VND'
-                elif review['bidForm'] == 'CHCT' or review['bidForm'] == 'CHCTRG':
-                    fee= '220,000 VND'
-            elif review['isInternet'] ==0:
-                if review['feeValue'] is None:
-                    fee =''
-                else:
-                    fee = str(review['feeValue']) + 'VND'
+            review['isInternet'] = ''
+
+        if review['isInternet'] == 1:
+            if review['bidForm'] == 'DTRR' or review['bidForm'] == 'DTHC' or review['bidForm'] == 'MSTT':
+                fee= '330,000 VND'
+            elif review['bidForm'] == 'CHCT' or review['bidForm'] == 'CHCTRG':
+                fee= '220,000 VND'
+        elif review['isInternet'] == 0:
+            if review['feeValue'] is None:
+                fee = ''
+            else:
+                fee = str(review['feeValue']) + 'VND'
 
 
         if review['notifyNo'] is None:
-            review['notifyNo'] = 0
+            review['notifyNo'] = ''
 
         if review['publicDate'] is None:
-            review['publicDate'] = 0
+            review['publicDate'] = '0'
 
         if review['planNo'] is None:
-            review['planNo'] =0
+            review['planNo'] = ''
 
         if review['planType'] is None:
-            review['planType'] =0
+            review['planType'] = ''
 
         if review['planName'] is None:
-            review['planName'] =0
+            review['planName'] = ''
 
         if review['bidName'] is None:
-            review['bidName'] =0
+            review['bidName'] = ''
 
         if review['investorName'] is None:
-            review['investorName'] =0
+            review['investorName'] = ''
 
         if review['procuringEntityName'] is None:
-            review['procuringEntityName'] =0
+            review['procuringEntityName'] = ''
 
         if review['capitalDetail'] is None:
-            review['capitalDetail'] =0
+            review['capitalDetail'] = ''
 
         if review['investField'] is None:
-            review['investField'] =0
+            review['investField'] = ''
 
         if review['bidForm'] is None:
-            review['bidForm'] =0
+            review['bidForm'] = ''
 
         if review['isDomestic'] is None:
-            review['isDomestic'] =0
+            review['isDomestic'] = ''
 
         if review['bidMode'] is None:
-            review['bidMode'] =0
+            review['bidMode'] = ''
 
         if review['isInternet'] is None:
-            review['isInternet'] =0
+            review['isInternet'] = ''
 
         if review['issueLocation'] is None:
-            review['issueLocation'] =0
+            review['issueLocation'] = ''
 
         if review['receiveLocation'] is None:
-            review['receiveLocation'] =0
+            review['receiveLocation'] = ''
 
         if review['bidCloseDate'] is None:
-            review['bidCloseDate'] =0
+            review['bidCloseDate'] = ''
 
         if review['bidOpenDate'] is None:
-            review['bidOpenDate'] =0
+            review['bidOpenDate'] = ''
 
         if review['bidOpenLocation'] is None:
-            review['bidOpenLocation'] =0
+            review['bidOpenLocation'] = ''
 
         if review['bidValidityPeriod'] is None:
-            review['bidValidityPeriod'] =0
+            review['bidValidityPeriod'] = ''
 
         if review['bidValidityPeriodUnit'] is None:
-            review['bidValidityPeriodUnit'] =0
+            review['bidValidityPeriodUnit'] = ''
 
-        if review['guaranteeValue'] is None:
-            review['guaranteeValue'] =0
-
-        if review['guaranteeForm'] is None:
-            review['guaranteeForm'] =0
 
         if json_data['bidInvContractorOfflineDTO'] is not None:
             if json_data['bidInvContractorOfflineDTO']['decisionNo'] is None:
-                decisionNo =0
+                decisionNo = ''
             else:
                 decisionNo = json_data['bidInvContractorOfflineDTO']['decisionNo']
 
             if json_data['bidInvContractorOfflineDTO']['decisionDate'] is None:
-                decisionDate =0
+                decisionDate = ''
             else:
                 decisionDate = json_data['bidInvContractorOfflineDTO']['decisionDate']
 
             if json_data['bidInvContractorOfflineDTO']['decisionAgency'] is None:
-                decisionAgency =0
+                decisionAgency = ''
             else:
                 decisionAgency = json_data['bidInvContractorOfflineDTO']['decisionAgency']
 
             if json_data['bidInvContractorOfflineDTO']['decisionFileId'] is None:
-                decisionFileId = 0
-                link1 = 0
+                decisionFileId = ''
+                link1 = ''
             else:
                 decisionFileId = json_data['bidInvContractorOfflineDTO']['decisionFileId']
                 link1 = 'http://localhost:1234/api/download/file/browser/public?fileId='+ decisionFileId
         else:
-            decisionNo =0
-            decisionDate =0
-            decisionAgency =0
-            decisionFileId = 0
-            link1=0
+            decisionNo =''
+            decisionDate = ''
+            decisionAgency = ''
+            decisionFileId = ''
+            link1= ''
 
         if review['id'] is None:
-            review['id'] =0
-            link2=0
+            review['id'] = ''
+            link2= ''
         else:
             link2 = 'https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id='+ review['id']
 
 
         if review['bidPrice'] is None:
-            review['bidPrice'] =0
+            review['bidPrice'] = ''
         if review2['bidoBidroundMngViewDTO'] is not None:
             if review2['bidoBidroundMngViewDTO']['successBidOpenDate'] is None:
-                bien =0
+                bien = ''
             else:
                 bien = review2['bidoBidroundMngViewDTO']['successBidOpenDate']
         else:
-            bien = 0
+            bien = ''
 
 
-        details.extend([review['notifyNo'],
-        review['publicDate'],
-        review['planNo'],
-        review['planType'],
-        review['planName'],
-        review['bidName'],
-        review['investorName'],
-        review['procuringEntityName'],
-        review['capitalDetail'],
-        review['investField'],
-        review['bidForm'],
-        v,
-        review['isDomestic'],
-        review['bidMode'],
-        a,
-        review['isInternet'],
-        review['issueLocation'],
-        fee,
-        review['receiveLocation'],
-        b,
-        review['bidCloseDate'],
-        review['bidOpenDate'],
-        review['bidOpenLocation'],
-        str(review['bidValidityPeriod']) + str(review['bidValidityPeriodUnit']),
-        review['guaranteeValue'],
-        review['guaranteeForm'],
-        decisionNo,
-        decisionDate,
-        decisionAgency,
-        link1,
-        link2,
-        review['bidPrice'],
-        dem,
-        bien,
-        nhap1
-        ])
+        details.extend([
+                        review['notifyNo'],
+                            review['publicDate'],
+                            review['planNo'],
+                            review['planType'],
+                            review['planName'],
+                            review['bidName'],
+                            review['investorName'],
+                            review['procuringEntityName'],
+                            review['capitalDetail'],
+                            review['investField'],
+                            review['bidForm'],
+                            v,
+                            review['isDomestic'],
+                            review['bidMode'],
+                            a,
+                            review['isInternet'],
+                            review['issueLocation'],
+                            fee,
+                            review['receiveLocation'],
+                            b,
+                            review['bidCloseDate'],
+                            review['bidOpenDate'],
+                            review['bidOpenLocation'],
+                            str(review['bidValidityPeriod']) + str(review['bidValidityPeriodUnit']),
+                            
+                            
+                            decisionNo,
+                            decisionDate,
+                            decisionAgency,
+                            link1,
+                            link2,
+                            review['bidPrice'],
+                            dem,
+                            bien,
+                            nhap1])
+        
         with open(''+folder_path1+'/DXT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)
@@ -3748,7 +3802,8 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
         print(f"{type(err).__name__} was raised: {err}")
         f = open(''+folder_path1+"/log.txt", "a")
         h="{}".format(code)
-        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
         f.write('\n')
         f.close()
         i = random.randrange(1,10)
@@ -3760,7 +3815,8 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
     except requests.exceptions.ConnectionError:
         f = open(''+folder_path1+"/log.txt", "a")
         h="{}".format(code)
-        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
         f.write('\n')
         f.close()
         i = random.randrange(1,10)
@@ -3773,7 +3829,8 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
         print(f"{type(err).__name__} was raised: {err}")
         f = open(''+folder_path1+"/log.txt", "a")
         h="{}".format(code)
-        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
         f.write('\n')
         f.close()
         i = random.randrange(1,10)
@@ -3786,7 +3843,8 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
         print(f"{type(err).__name__} was raised: {err}")
         f = open(''+folder_path1+"/log.txt", "a")
         h="{}".format(code)
-        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
         f.write('\n')
         f.close()
         i = random.randrange(1,10)
@@ -3795,6 +3853,161 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
         session1 = requests.Session()
         pass
     return
+
+def CrawlDetail_DT_DXT_2(code,session1,codes,folder_path1,notify_no):
+    cookies = {
+        'COOKIE_SUPPORT': 'true',
+        'GUEST_LANGUAGE_ID': 'vi_VN',
+        '_ga': 'GA1.1.2001033887.1675655198',
+        'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
+        '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
+        '_ga_19996Z37EE': 'deleted',
+        '_ga_19996Z37EE': 'deleted',
+        '5321a273c51a75133e0fb1cd75e32e27': '90d57e96398dec0a2d505d16e8dab718',
+        'JSESSIONID': 'j42sgmGH7hD0CrMTwBqHFE7zrzf6v-YAYv0pq7r4.dc_app1_02',
+        'LFR_SESSION_STATE_20103': '1678953886960',
+        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2245525d5f4f58455e445a4a4217de',
+        '_ga_19996Z37EE': 'GS1.1.1678952934.12.1.1678954032.0.0.0',
+        'citrix_ns_id': 'AAY76skSZDvmstQAAAAAADuFeyfrzB16Q6f2O1xwPpu7H2EZwZrlhyq0uv0rs0RgOw==vdESZA==FJrG_ayohQqdZRWrr4alrzqYQOU=',
+    }
+
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/json',
+        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; 5321a273c51a75133e0fb1cd75e32e27=90d57e96398dec0a2d505d16e8dab718; JSESSIONID=j42sgmGH7hD0CrMTwBqHFE7zrzf6v-YAYv0pq7r4.dc_app1_02; LFR_SESSION_STATE_20103=1678953886960; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2245525d5f4f58455e445a4a4217de; _ga_19996Z37EE=GS1.1.1678952934.12.1.1678954032.0.0.0; citrix_ns_id=AAY76skSZDvmstQAAAAAADuFeyfrzB16Q6f2O1xwPpu7H2EZwZrlhyq0uv0rs0RgOw==vdESZA==FJrG_ayohQqdZRWrr4alrzqYQOU=',
+        'Origin': 'https://muasamcong.mpi.gov.vn',
+        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-2-kqmt&id=9506398d-3028-4735-9d7b-6a9b41f9540b&notifyId=9506398d-3028-4735-9d7b-6a9b41f9540b&inputResultId=undefined&bidOpenId=6207a849-263c-421d-a328-15cd627578d5&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=KHAC&bidMode=1_MTHS&notifyNo=IB2300037374&planNo=PL2300024675&pno=undefined',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 OPR/96.0.0.0',
+        'sec-ch-ua': '"Not=A?Brand";v="8", "Chromium";v="110", "Opera GX";v="96"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+    }
+    try:
+        session = session1
+        data = '{"id":"'+code+'"}'
+        response = session.post(
+            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/kqmt/bid-notify-contractor-out/get-by-id',
+            cookies=cookies,
+            headers=headers,
+            data=data,
+            allow_redirects=False,
+            verify= False,
+        )
+        json_data = response.json()
+        review=json_data
+        nhap1 = []
+        nhap1.clear()
+        dem = 0
+        if review is not None:
+            if review['bidSubmissionByContractorViewResponse'] is not None:
+                if review['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is not None:
+                    for nhathau in review['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList']:
+                        if nhathau['contractorCode'] is None:
+                            nhathau['contractorCode'] = ''
+
+                        if nhathau['contractorName'] is None:
+                            nhathau['contractorName'] = ''
+
+                        if nhathau['bidPrice'] is None:
+                            nhathau['bidPrice'] = ''
+
+                        if nhathau['alternativeTech'] is None:
+                            nhathau['alternativeTech'] = ''
+
+                        if nhathau['bidFinalPrice'] is None:
+                            nhathau['bidFinalPrice'] = ''
+
+                        if nhathau['bidValidityNum'] is None:
+                            nhathau['bidValidityNum'] = ''
+
+                        if nhathau['bidGuarantee'] is None:
+                            nhathau['bidGuarantee'] = ''
+
+                        if nhathau['bidGuaranteeValidity'] is None:
+                            nhathau['bidGuaranteeValidity'] = ''
+
+                        if nhathau['contractPeriodDT'] is None:
+                            nhathau['contractPeriodDT'] = ''
+
+                        if nhathau['contractPeriodDTUnit'] is None:
+                            nhathau['contractPeriodDTUnit'] = ''
+
+                        nhap1.append([nhathau['contractorCode'], 
+                                      nhathau['contractorName'], 
+                                      nhathau['bidPrice'], 
+                                      nhathau['alternativeTech'],
+                                     nhathau['bidFinalPrice'] ,
+                                      nhathau['bidValidityNum'],
+                                      nhathau['bidGuarantee'],
+                                      nhathau['bidGuaranteeValidity'],
+                                      str(nhathau['contractPeriodDT']) + nhathau['contractPeriodDTUnit']
+                                     ]) 
+                        dem=dem+1
+
+                    return nhap1,dem
+                
+    except requests.ReadTimeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.exceptions.ConnectionError:
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.Timeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except Exception as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+    return
+
+
 
 def CrawlDetail_DT_CNTTT(code,details,session1,codes,folder_path1,code1,code2):
 
