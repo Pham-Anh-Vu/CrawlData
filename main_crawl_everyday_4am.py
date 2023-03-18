@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import upABNDetail_db
 import upABNFiles_db
 import upABN_db
+import upFileDinhKemHSMT
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -2707,6 +2708,14 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
             listx = [1]
             listHangHoa.extend(listx)
 
+        listFileDinhKemHSMT = []
+        listFileDinhKemHSMT.clear()
+        if json_data['bidoInvBiddingDTO'] is not None:
+            if json_data['bidoInvBiddingDTO'] != []:
+                listz=crawlDetail_FileDinhKemHSMT(data=json_data['bidoInvBiddingDTO'])
+                listFileDinhKemHSMT.extend(listz)
+
+
         listFileHSMT=[]
         listFileHSMT.clear()
 
@@ -2809,7 +2818,8 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                         codes,#33
                         listHangHoa,#34
                         listFileHSMT,#35
-                        decisionFileName])#36
+                        decisionFileName,#36
+                        listFileDinhKemHSMT])#37
 
         bidType = upABN_db.bid_type(details[10])
         bidMethod = upABN_db.bid_method(details[16])
@@ -2903,6 +2913,15 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         pass
 
     return
+
+def crawlDetail_FileDinhKemHSMT(data):
+    for file in data:
+        review_dic = json.loads(file['formValue'])
+        sharedFiles = review_dic['sharedFiles']
+        if sharedFiles is not None:
+            if sharedFiles != []:
+                
+
 
 def crawlDetail_HangHoa(data):
     list_HH = []
@@ -3409,7 +3428,7 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
 
     return
 
-def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
+def xCrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
     cookies = {
         'COOKIE_SUPPORT': 'true',
         'GUEST_LANGUAGE_ID': 'vi_VN',
