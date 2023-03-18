@@ -2608,7 +2608,7 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         if review['issueLocation'] is None:
             review['issueLocation'] = ''
 
-        fee=0
+        fee=''
         if review['isInternet'] == 1:
             if review['bidForm'] == 'DTRR' or review['bidForm'] == 'DTHC' or review['bidForm'] == 'MSTT':
                 fee = '330,000 VND'
@@ -2623,7 +2623,7 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         if review['receiveLocation'] is None:
             review['receiveLocation'] = ''
 
-        b=0
+        b=''
         if data.find('bidpBidLocationList') != -1 :
             if json_data['bidpBidLocationList'] is None or json_data['bidpBidLocationList'] == []:
                 b = ''
@@ -2770,6 +2770,9 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         if review['bidPrice'] is None:
             review['bidPrice'] = ''
 
+        if review['notifyVersion'] is None:
+            review['notifyVersion'] = ''
+
         details.extend([review['notifyNo'],#0
                         review['publicDate'],#1
                         review["notifyVersion"],#2
@@ -2820,14 +2823,24 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
 
             news_id = upABN_db.upDataDB(3, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"],
                               tim_close, time_post, date_app)
-            print(1)
+            
             upABNDetail_db.upData(details, news_id)
-            print(2)
+            
             conn = connectdb.connect()
             cur = conn.cursor()
-            cur.execute(f"SELECT * FROM pccc_app_bidding_news_details WHERE `key` = 'ho-so-moi-thau' AND news_id = '{news_id}'")
-            result = int(cur.fetchone()[0])
-            upABNFiles_db.upData(details, result)
+            sql = "SELECT * FROM pccc_app_bidding_news_details WHERE `key` = %s AND news_id = %s"
+            val = ('ho-so-moi-thau',news_id)
+            cur.execute(sql, val)
+            conn.commit()
+            myresult = cur.fetchone()
+            
+            if myresult is not None:
+                if myresult != []:
+                    result = myresult[0]
+                
+                    upABNFiles_db.upData(details, result, link1)
+                    
+            
 
         with open(''+folder_path1+'/TBMT_CDT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)

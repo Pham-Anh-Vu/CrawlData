@@ -4,16 +4,6 @@ import mariadb
 from unidecode import unidecode
 import connectdb
 
-def connect():
-    conn = mariadb.connect(
-        user="root",
-        password="Nmd021200.",
-        host="127.0.0.1",
-        port=3306,
-        database="test"
-    )
-    return conn
-
 def time_close(data):
     time = datetime.datetime.strptime(data, '%Y-%m-%dT%H:%M:%S')
     time = datetime.datetime.strftime(time, '%d/%m/%Y %H:%M')
@@ -24,7 +14,7 @@ def time_post(data):
     tim_post = datetime.datetime.strftime(tim_post, '%Y-%m-%d %H:%M:%S')
     return tim_post
 
-def upData(details, id):
+def upData(details, id1):
     titles1 = 'Hình thức thông báo'
 
     titles2 = 'Loại thông báo'
@@ -214,7 +204,8 @@ def upData(details, id):
 
     if details[2] != "00" or details[2] != 00:
         value1 = "Điều chỉnh"
-    else: value1 = "Đăng lần đầu"
+    else: 
+        value1 = "Đăng lần đầu"
 
     value2 = "Thông báo thực"
 
@@ -240,8 +231,8 @@ def upData(details, id):
 
     if details[12] == "TG":
         value13 = "Trọn Gói"
-    else: value13 = ""
-
+    else: 
+        value13 = ""
     value14 = f"{details[11]} {details[13]}"
 
     value15 = details[14]
@@ -299,7 +290,7 @@ def upData(details, id):
     value30 = None
     value31 = None
 
-    conn = connect()
+    conn = connectdb.connect()
     cur = conn.cursor()
     sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
     val = (value8,)
@@ -307,53 +298,49 @@ def upData(details, id):
     conn.commit()
     myresult = cur.fetchone()
 
-    if myresult:
-        subject_id_1 = myresult[0]
-        subject_id_1 = str(subject_id_1)
-        subject_type_1 = 'App\Models\JobCompanyProfile'
+    if myresult is not None:
+        if myresult != []:
+            subject_id_1 = myresult[0]
+            subject_id_1 = str(subject_id_1)
+            subject_type_1 = 'App\Models\JobCompanyProfile'
     else:
         subject_id_1 = None
         subject_type_1 = None
 
-
-
     records = [
-        (key1, sub_title1, titles1, value1),
-        (key2, sub_title2, titles2, value2),
-        (key3, sub_title3, titles3, value3),
-        (key4, sub_title4, titles4, value4),
-        (key5, sub_title5, titles5, value5),
-        (key6, sub_title6, titles6, value6),
-        (key7, sub_title7, titles7, value7),
-        (key8, sub_title8, titles8, value8),
-        (key9, sub_title9, titles9, value9),
-        (key10, sub_title10, titles10, value10),
-        (key11, sub_title11, titles11, value11),
-        (key12, sub_title12, titles12, value12),
-        (key13, sub_title13, titles13, value13),
-        (key14, sub_title14, titles14, value14),
-        (key15, sub_title15, titles15, value15),
-        (key16, sub_title16, titles16, value16),
-        (key17, sub_title17, titles17, value17),
-        (key18, sub_title18, titles18, value18),
-        (key19, sub_title19, titles19, value19),
-        (key20, sub_title20, titles20, value20),
-        (key21, sub_title21, titles21, value21),
-        (key22, sub_title22, titles22, value22),
-        (key23, sub_title23, titles23, value23),
-        (key24, sub_title24, titles24, value24),
-        (key25, sub_title25, titles25, value25),
-        (key26, sub_title26, titles26, value26),
-        (key27, sub_title27, titles27, value27),
-        (key28, sub_title28, titles28, value28),
-        (key29, sub_title29, titles29, value29),
-        (key30, sub_title30, titles30, value30),
-        (key31, sub_title31, titles31, value31)]
+        (key1, sub_title1, titles1, value1, id1),
+        (key2, sub_title2, titles2, value2, id1),
+        (key3, sub_title3, titles3, value3, id1),
+        (key4, sub_title4, titles4, value4, id1),
+        (key5, sub_title5, titles5, value5, id1),
+        (key6, sub_title6, titles6, value6, id1),
+        (key7, sub_title7, titles7, value7, id1),
+        (key8, sub_title8, titles8, value8, id1),
+        (key9, sub_title9, titles9, value9, id1),
+        (key10, sub_title10, titles10, value10, id1),
+        (key11, sub_title11, titles11, value11, id1),
+        (key12, sub_title12, titles12, value12, id1),
+        (key13, sub_title13, titles13, value13, id1),
+        (key14, sub_title14, titles14, value14, id1),
+        (key15, sub_title15, titles15, value15, id1),
+        (key16, sub_title16, titles16, value16, id1),
+        (key17, sub_title17, titles17, value17, id1),
+        (key18, sub_title18, titles18, value18, id1),
+        (key19, sub_title19, titles19, value19, id1),
+        (key20, sub_title20, titles20, value20, id1),
+        (key21, sub_title21, titles21, value21, id1),
+        (key22, sub_title22, titles22, value22, id1),
+        (key23, sub_title23, titles23, value23, id1),
+        (key24, sub_title24, titles24, value24, id1),
+        (key25, sub_title25, titles25, value25, id1),
+        (key26, sub_title26, titles26, value26, id1),
+        (key27, sub_title27, titles27, value27, id1),
+        (key28, sub_title28, titles28, value28, id1),
+        (key29, sub_title29, titles29, value29, id1),
+        (key30, sub_title30, titles30, value30, id1),
+        (key31, sub_title31, titles31, value31, id1)]
 
-    conn = connectdb.connect()
-    mycursor = conn.cursor()
     sql = "INSERT INTO pccc_app_bidding_news_details(`key`, sub_title, title, value, news_id, type_id, created_at, updated_at) " \
-          f"VALUES (%s, %s, %s, %s, '{id}', '{3}', '{datetime.datetime.now()}', '{datetime.datetime.now()}');"
-    print(records)
-    mycursor.executemany(sql, records)
+          f"VALUES (%s, %s, %s, %s, %s, 3, NOW(), NOW());"
+    cur.executemany(sql, records)
     conn.commit()
