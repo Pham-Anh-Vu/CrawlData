@@ -2693,11 +2693,12 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                     json_data['bidInvContractorOfflineDTO']['decisionFileId'] =''
                 else:
                     link1 = 'http://localhost:1234/api/download/file/browser/public?fileId='+ str(json_data['bidInvContractorOfflineDTO']['decisionFileId'])
-    
+        link2=''
         if review['id'] is None:
             link2 = ''
         else:
-            link2 ='https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + str(review['id'])
+            if review['isInternet'] == 1 or review['isInternet'] == 'Qua mạng':
+                link2 ='https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + str(review['id'])
         
         listHangHoa=[]
         listHangHoa.clear()
@@ -2718,51 +2719,54 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                     listFileHSMT=[]
                 else: 
                     reviewx = json_data['bidaInvChapterConfList']
+                    sttpcode1 = 0
+                    sttpcode2 = 20
+                    sttpcode3 = 40
+                    stt = 0
+                    list_file = []
+                    list_file.clear()
+
                     for review1 in reviewx:
                         if review1['lev'] is not None:
                             if review1['lev'] <= 1:
                                 idFile = review['id']
                                 lev = review1['lev']
-                                code = review1['code']
-                                pcode = review1['pcode']
+                                code1 = review1['code']
+                                
+                                if review1['pcode'] is None:
+                                    pcode = ''
+                                else:
+                                    pcode = review1['pcode']
+
                                 name = review1['name']
                                 orderIndex = review1['orderIndex']
+
                                 if lev == 0:
                                     if orderIndex == 0:
-                                        stt = 0
+                                        stt = sttpcode1
+                                
                                     if orderIndex == 1:
-                                        stt = 7
+                                        stt = sttpcode2
+                                
                                     if orderIndex == 2:
-                                        stt = 9
-                                    
+                                        stt = sttpcode3
+                                
                                 if lev == 1:
                                     if pcode == 'P1':
-                                        if orderIndex == 0:
-                                            stt = 1
-                                        elif orderIndex == 1:
-                                            stt = 2
-                                        elif orderIndex == 2:
-                                            stt = 3
-                                        elif orderIndex == 3:
-                                            stt = 4
-                                        elif orderIndex == 4:
-                                            stt = 5
-                                        elif orderIndex == 5:
-                                            stt = 6
+                                        stt = orderIndex + sttpcode1 + 1
+
                                     if pcode == 'P2':
-                                        if orderIndex == 0:
-                                            stt = 8
+                                        stt = orderIndex + sttpcode2 + 1
+                                    
                                     if pcode == 'P3':
-                                        if orderIndex == 0:
-                                            stt = 10
-                                        elif orderIndex == 1:
-                                            stt = 11
-                                        elif orderIndex == 2:
-                                            stt = 12 
-                                list_file.append([stt,idFile, lev, name, code, pcode, orderIndex])
+                                        stt = orderIndex + sttpcode3 + 1
+
+                                list_file.append([stt,idFile, lev, name, code1, pcode, orderIndex])
+
             listFileHSMT = []
             listFileHSMT.clear()
             listFileHSMT = sorted(list_file, key=lambda list_file: list_file[0])
+
         if review['bidPrice'] is None:
             review['bidPrice'] = ''
 
@@ -2804,20 +2808,21 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                         listFileHSMT,#35
                         decisionFileName])#36
 
-        bidType = upABN_db.bid_type(review['investField'])
-        bidMethod = upABN_db.bid_method(review['isInternet'])
+        bidType = upABN_db.bid_type(details[10])
+        bidMethod = upABN_db.bid_method(details[16])
         crea_at = upABN_db.timeUpd()
-        tim_close = upABN_db.time_close(review['bidCloseDate'])
-        time_post = upABN_db.time_post(review['publicDate'])
+        tim_close = upABN_db.time_close(details[21])
+        time_post = upABN_db.time_post(details[1])
         date_app = upABN_db.date_app(formatted_date)
         news_id = 0
+
         if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
 
             news_id = upABN_db.upDataDB(3, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"],
                               tim_close, time_post, date_app)
-
+            print(1)
             upABNDetail_db.upData(details, news_id)
-
+            print(2)
             conn = connectdb.connect()
             cur = conn.cursor()
             cur.execute(f"SELECT * FROM pccc_app_bidding_news_details WHERE `key` = 'ho-so-moi-thau' AND news_id = '{news_id}'")
@@ -3508,7 +3513,7 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
         else:
             if review2['bidSubmissionByContractorViewResponse'] is None:
                 nhap1, dem = CrawlDetail_DT_DXT_2(code=code,session1=session1,codes=codes,folder_path1=folder_path1,notify_no=notify_no)
-                print(nhap1)
+            
             else:
                 if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is None:
                     return

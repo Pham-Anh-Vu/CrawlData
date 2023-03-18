@@ -7,10 +7,10 @@ import connectdb
 def connect():
     conn = mariadb.connect(
         user="root",
-        password="123123",
+        password="Nmd021200.",
         host="127.0.0.1",
         port=3306,
-        database="abc"
+        database="test"
     )
     return conn
 
@@ -260,8 +260,11 @@ def upData(details, id):
 
     value19 = time_close(details[21])
 
-    value20 = details[18]
-
+    if details[18] == '' or details[18] == 0 :
+        value20 = 'Miễn phí'
+    else:
+        value20 = details[18]
+    
     for i in details[24]:
         if i.isnumeric(): continue
         else:
@@ -278,9 +281,17 @@ def upData(details, id):
 
     value25 = details[23]
 
-    value26 = details[26]
+    if details[26] != '':
+        value26 = int(details[26])
+        value26 = "{:,}".format(value26).replace(",", ".") + " VND"
+    else:
+        value26 = details[26]
 
-    value27 = details[25]
+    if details[25] != '':
+        value27 = int(details[25])
+        value27 = "{:,}".format(value27).replace(",", ".") + " VND"
+    else:
+        value27 = details[25]
 
     value28 = details[27]
 
@@ -290,8 +301,9 @@ def upData(details, id):
 
     conn = connect()
     cur = conn.cursor()
-    sql = 'SELECT * FROM pccc_app_job_company_profiles WHERE company_name = "Công ty TNHH Xây dựng Thương mại Dịch vụ Thiên Lộc Gia"'
-    cur.execute(sql)
+    sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
+    val = (value8,)
+    cur.execute(sql,val)
     conn.commit()
     myresult = cur.fetchone()
 
@@ -336,11 +348,12 @@ def upData(details, id):
         (key28, sub_title28, titles28, value28),
         (key29, sub_title29, titles29, value29),
         (key30, sub_title30, titles30, value30),
-        (key31, sub_title31, titles31, value31)
-    ]
+        (key31, sub_title31, titles31, value31)]
+
     conn = connectdb.connect()
     mycursor = conn.cursor()
     sql = "INSERT INTO pccc_app_bidding_news_details(`key`, sub_title, title, value, news_id, type_id, created_at, updated_at) " \
           f"VALUES (%s, %s, %s, %s, '{id}', '{3}', '{datetime.datetime.now()}', '{datetime.datetime.now()}');"
+    print(records)
     mycursor.executemany(sql, records)
     conn.commit()
