@@ -10,7 +10,7 @@ def connect():
         password="123123",
         host="127.0.0.1",
         port=3306,
-        database="abc"
+        database="test"
     )
     return conn
 
@@ -260,7 +260,9 @@ def upData(details, id):
 
     value19 = time_close(details[21])
 
-    value20 = details[18]
+    if details[18] == 0 or details[18] == "0":
+        value20 = "Miễn phí"
+    else: value20 = "Mất phí"
 
     for i in details[24]:
         if i.isnumeric(): continue
@@ -278,9 +280,9 @@ def upData(details, id):
 
     value25 = details[23]
 
-    value26 = details[26]
+    value26 = str(details[26])
 
-    value27 = details[25]
+    value27 = str(details[25])
 
     value28 = details[27]
 
@@ -341,6 +343,8 @@ def upData(details, id):
     conn = connectdb.connect()
     mycursor = conn.cursor()
     sql = "INSERT INTO pccc_app_bidding_news_details(`key`, sub_title, title, value, news_id, type_id, created_at, updated_at) " \
-          f"VALUES (%s, %s, %s, %s, '{id}', '{3}', '{datetime.datetime.now()}', '{datetime.datetime.now()}');"
+          f"VALUES (%s, %s, %s, %s, '{id}', '3', '{datetime.datetime.now()}', '{datetime.datetime.now()}');"
     mycursor.executemany(sql, records)
     conn.commit()
+#
+# def upData_DXT(details, id):

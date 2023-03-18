@@ -3701,9 +3701,13 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
         else:
             bien = 0
 
+        if review["notifyVersion"] is None:
+            review["notifyVersion"] = 0
+
 
         details.extend([review['notifyNo'],
         review['publicDate'],
+        review["notifyVersion"],
         review['planNo'],
         review['planType'],
         review['planName'],
@@ -3727,17 +3731,31 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1):
         review['bidOpenLocation'],
         str(review['bidValidityPeriod']) + str(review['bidValidityPeriodUnit']),
         review['guaranteeValue'],
+        review['bidPrice'],
         review['guaranteeForm'],
         decisionNo,
         decisionDate,
         decisionAgency,
         link1,
         link2,
-        review['bidPrice'],
         dem,
         bien,
         nhap1
         ])
+
+        bidType = upABN_db.bid_type(review['investField'])
+        bidMethod = upABN_db.bid_method(review['isInternet'])
+        crea_at = upABN_db.timeUpd()
+        tim_close = None
+        time_post = None
+        date_app = None
+        tim_open = upABN_db.time_close(review['bidOpenDate'])
+        if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
+
+            news_id = upABN_db.upDataDB(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"],
+                              tim_close, time_post, date_app)
+            upABN_db.upDataDB_DXT(tim_open)
+
         with open(''+folder_path1+'/DXT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)

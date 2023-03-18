@@ -9,7 +9,7 @@ def connect():
         password="123123",
         host="127.0.0.1",
         port=3306,
-        database="test"
+        database="abc"
     )
     return conn
 
@@ -32,7 +32,6 @@ def bid_type(data):
         bid_type = 2
     elif data == "Hỗn hợp":
         bid_type = 4
-    else: bid_type = 5
     return bid_type
 
 def bid_method(data):
@@ -76,10 +75,3 @@ def yesterday():
     # yesterday = yesterday.date()
     yesterday = yesterday.strftime('%Y-%m-%d')
     return yesterday
-
-def upDataDB_DXT(bid_open_tim):
-    conn = connect()
-    mycursor = conn.cursor()
-    sql = f"INSERT INTO pccc_app_bidding_news(bid_opening_time, open_result_status) VALUES ('{bid_open_tim}', 'bid_open_complete');"
-    mycursor.execute(sql)
-    conn.commit()
