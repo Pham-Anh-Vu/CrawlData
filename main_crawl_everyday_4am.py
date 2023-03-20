@@ -2703,6 +2703,16 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
             listx = [1]
             listHangHoa.extend(listx)
 
+<<<<<<< Updated upstream
+=======
+        listFileDinhKemHSMT = []
+        listFileDinhKemHSMT.clear()
+        if json_data['bidoInvBiddingDTO'] is not None:
+            if json_data['bidoInvBiddingDTO'] != []:
+                listz=crawlDetail_FileDinhKemHSMT(data=json_data['bidoInvBiddingDTO'])
+                listFileDinhKemHSMT.extend(listz)
+
+>>>>>>> Stashed changes
         listFileHSMT=[]
         listFileHSMT.clear()
 
@@ -2872,6 +2882,24 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
 
     return
 
+<<<<<<< Updated upstream
+=======
+def crawlDetail_FileDinhKemHSMT(data):
+    nhapFile = []
+    nhapFile.clear()
+    for file in data:
+        review_dic = json.loads(file['formValue'])
+        sharedFiles = review_dic['sharedFiles']
+        if sharedFiles is not None:
+            if sharedFiles != []:
+                for file_id in sharedFiles:
+                    nhapFile.append([file_id,file['formCode'],file['chapterCode']])
+    
+    return nhapFile
+                    
+
+
+>>>>>>> Stashed changes
 def crawlDetail_HangHoa(data):
     list_HH = []
     list_HH.clear()
