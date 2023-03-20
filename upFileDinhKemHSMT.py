@@ -1,16 +1,39 @@
 import ftplib
 import os
 import urllib.request
+import cgi
+import urllib.parse
 
-def downFileAndUpLoad(url,file_name):
-    
+def downFileAndUpLoad(url):
     folder_pathz = './download'
     if not os.path.isdir(folder_pathz):
         os.mkdir(folder_pathz)
     # URL of the file to download
 
-    url = 'http://localhost:1234/api/download/file/browser/public?fileId=228c5a9c-7886-4bdb-9b7a-3756f9012fe9'
-    file_name = '2023218163243430_2.1.+CHƯƠNG+V+YÊU+CẦU+VỀ+KỸ+THUẬT+GÓI+THẦU+XL-05+.pdf'
+    remotefile = urllib.request.urlopen(url)
+    contentdisposition = remotefile.info()['Content-Disposition']
+    _, params = cgi.parse_header(contentdisposition)
+    filename = params["filename"]
+    file_name = urllib.parse.unquote(filename)
+    base, ext= os.path.splitext(file_name)
+    # Tạo tên file mới
+    file_name = base.replace("+", " ")
+    file_name = file_name.split("_")[1] + ext
+    local_file_path = './download/'+file_name
+    file_name_for_user = file_name
+    if os.path.exists(local_file_path):
+            # Nếu tên file đã tồn tại, thêm số thứ tự vào sau tên file để đổi tên
+            i = 1
+            new_filename = file_name
+            local_file_path = './download/'+new_filename
+            while os.path.exists(local_file_path):
+                base, ext = os.path.splitext(file_name)
+                new_filename = "{}_{}{}".format(base, i, ext)
+                i += 1
+                local_file_path = './download/'+new_filename
+            file_name = new_filename
+            local_file_path = './download/'+file_name
+
     # Download the file
     urllib.request.urlretrieve(url, './download/'+file_name)
 
@@ -50,4 +73,5 @@ def downFileAndUpLoad(url,file_name):
         type = os.path.splitext(file_name)[1].replace('.','')
         name = file_name
         path = remote_file_path_name
-    return name,type,path
+        file_name_for_user = 'File đính kèm: '+file_name_for_user
+    return name,type,path, file_name_for_user

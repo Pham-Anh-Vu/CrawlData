@@ -2709,8 +2709,6 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
             listx = [1]
             listHangHoa.extend(listx)
 
-<<<<<<< Updated upstream
-=======
         listFileDinhKemHSMT = []
         listFileDinhKemHSMT.clear()
         if json_data['bidoInvBiddingDTO'] is not None:
@@ -2718,7 +2716,6 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                 listz=crawlDetail_FileDinhKemHSMT(data=json_data['bidoInvBiddingDTO'])
                 listFileDinhKemHSMT.extend(listz)
 
->>>>>>> Stashed changes
         listFileHSMT=[]
         listFileHSMT.clear()
 
@@ -2821,7 +2818,8 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                         codes,#33
                         listHangHoa,#34
                         listFileHSMT,#35
-                        decisionFileName])#36
+                        decisionFileName,#36
+                        listFileDinhKemHSMT])#37
 
         bidType = upABN_db.bid_type(details[10])
         bidMethod = upABN_db.bid_method(details[16])
@@ -2849,7 +2847,7 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
             if myresult is not None:
                 if myresult != []:
                     result = myresult[0]
-                
+
                     upABNFiles_db.upData(details, result, link1)
                     
             
@@ -2916,24 +2914,21 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
 
     return
 
-<<<<<<< Updated upstream
-=======
 def crawlDetail_FileDinhKemHSMT(data):
     nhapFile = []
     nhapFile.clear()
     for file in data:
         review_dic = json.loads(file['formValue'])
-        sharedFiles = review_dic['sharedFiles']
-        if sharedFiles is not None:
-            if sharedFiles != []:
-                for file_id in sharedFiles:
-                    nhapFile.append([file_id,file['formCode'],file['chapterCode']])
-    
+        datax = json.dumps(review_dic)
+        if datax.find('sharedFiles') != -1:
+            sharedFiles = review_dic['sharedFiles']
+            if sharedFiles is not None:
+                if sharedFiles != []:
+                    for file_id in sharedFiles:
+                        nhapFile.append([file_id,file['formCode'],file['chapterCode']])
+        
     return nhapFile
                     
-
-
->>>>>>> Stashed changes
 def crawlDetail_HangHoa(data):
     list_HH = []
     list_HH.clear()
@@ -3903,8 +3898,6 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
             upABN_db.upDataDB_DXT(tim_open, news_id)
 
             upABNDetail_db.upData_DXT(details, news_id)
-            print(1)
-
 
         with open(''+folder_path1+'/DXT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
