@@ -6,7 +6,7 @@ import datetime
 def connect():
     conn = mariadb.connect(
         user="root",
-        password="Nmd021200.",
+        password="123123",
         host="127.0.0.1",
         port=3306,
         database="test"
@@ -32,6 +32,7 @@ def bid_type(data):
         bid_type = 2
     elif data == "Hỗn hợp":
         bid_type = 4
+    else: bid_type = 5
     return bid_type
 
 def bid_method(data):
@@ -75,3 +76,21 @@ def yesterday():
     # yesterday = yesterday.date()
     yesterday = yesterday.strftime('%Y-%m-%d')
     return yesterday
+
+def upDataDB_DXT(bid_open_tim, news_id):
+    conn = connect()
+    mycursor = conn.cursor()
+    sql = f"UPDATE pccc_app_bidding_news SET bid_opening_time = '{bid_open_tim}', open_result_status = 'bid_open_complete' WHERE `id` = '{news_id}';"
+    mycursor.execute(sql)
+    conn.commit()
+
+def upDataDB_1_DXT(type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no):
+    conn = connect()
+    mycursor = conn.cursor()
+    sql = "INSERT INTO pccc_app_bidding_news (type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no) " \
+          f"VALUES ('{type_id}', '{bid_type}', '{bid_method}', '{aujusted_limited}', '{created_at}','{updated_at}', '{bid_number}', '{bid_turn_no}');"
+    mycursor.execute(sql)
+    conn.commit()
+    news_id = mycursor.lastrowid
+    news_id = int(news_id)
+    return news_id

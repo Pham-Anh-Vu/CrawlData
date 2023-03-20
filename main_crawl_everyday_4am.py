@@ -14,7 +14,8 @@ from datetime import datetime, timedelta
 import upABNDetail_db
 import upABNFiles_db
 import upABN_db
-import upFileDinhKemHSMT
+from pympler import muppy
+all_objects=muppy.get_objects()
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -2708,14 +2709,6 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
             listx = [1]
             listHangHoa.extend(listx)
 
-        listFileDinhKemHSMT = []
-        listFileDinhKemHSMT.clear()
-        if json_data['bidoInvBiddingDTO'] is not None:
-            if json_data['bidoInvBiddingDTO'] != []:
-                listz=crawlDetail_FileDinhKemHSMT(data=json_data['bidoInvBiddingDTO'])
-                listFileDinhKemHSMT.extend(listz)
-
-
         listFileHSMT=[]
         listFileHSMT.clear()
 
@@ -2818,8 +2811,7 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
                         codes,#33
                         listHangHoa,#34
                         listFileHSMT,#35
-                        decisionFileName,#36
-                        listFileDinhKemHSMT])#37
+                        decisionFileName])#36
 
         bidType = upABN_db.bid_type(details[10])
         bidMethod = upABN_db.bid_method(details[16])
@@ -2913,15 +2905,6 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         pass
 
     return
-
-def crawlDetail_FileDinhKemHSMT(data):
-    for file in data:
-        review_dic = json.loads(file['formValue'])
-        sharedFiles = review_dic['sharedFiles']
-        if sharedFiles is not None:
-            if sharedFiles != []:
-                
-
 
 def crawlDetail_HangHoa(data):
     list_HH = []
@@ -3428,7 +3411,7 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
 
     return
 
-def xCrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
+def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
     cookies = {
         'COOKIE_SUPPORT': 'true',
         'GUEST_LANGUAGE_ID': 'vi_VN',
@@ -3539,12 +3522,17 @@ def xCrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
         nhap1=[0]
         nhap1.clear()
         dem=0
-
+        datesucces = ""
         if review2 is None:
             return
         else:
+            if review2['bidoBidroundMngViewDTO']is not None:
+                if review2['bidoBidroundMngViewDTO']["successBidOpenDate"] is not None:
+                    datesucces = review2['bidoBidroundMngViewDTO']["successBidOpenDate"]
+
+
             if review2['bidSubmissionByContractorViewResponse'] is None:
-                nhap1, dem = CrawlDetail_DT_DXT_2(code=code,session1=session1,codes=codes,folder_path1=folder_path1,notify_no=notify_no)
+                nhap1, dem, datesucces = CrawlDetail_DT_DXT_2(code=code,session1=session1,codes=codes,folder_path1=folder_path1,notify_no=notify_no)
             
             else:
                 if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is None:
@@ -3665,14 +3653,22 @@ def xCrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
         fee=0
         if review['bidForm'] is None:
             review['bidForm'] = ''
+        else:
+            if review['bidForm'] == 'CHCT':
+                review['bidForm'] = 'Chào hàng cạnh tranh'
+            if review['bidForm'] == 'DTRR':
+                review['bidForm'] = 'Đấu thầu rộng rãi'
+            if review['bidForm'] == 'CHCTRG':
+                review['bidForm'] = 'Chào hàng cạnh tranh rút gọn'
+            if review['bidForm'] == 'CDTRG':
+                review['bidForm'] = 'Chỉ định thầu rút gọn'
 
         if review['isInternet'] is None:
             review['isInternet'] = ''
-
         if review['isInternet'] == 1:
-            if review['bidForm'] == 'DTRR' or review['bidForm'] == 'DTHC' or review['bidForm'] == 'MSTT':
+            if review['bidForm'] == 'Đấu thầu rộng rãi' or review['bidForm'] == 'DTHC' or review['bidForm'] == 'MSTT':
                 fee= '330,000 VND'
-            elif review['bidForm'] == 'CHCT' or review['bidForm'] == 'CHCTRG':
+            elif review['bidForm'] == 'Chào hàng cạnh tranh' or review['bidForm'] == 'Chào hàng cạnh tranh rút gọn':
                 fee= '220,000 VND'
         elif review['isInternet'] == 0:
             if review['feeValue'] is None:
@@ -3692,6 +3688,12 @@ def xCrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
 
         if review['planType'] is None:
             review['planType'] = ''
+        else:
+            if review['planType'] == 'DTPT':
+                review['planType'] = 'Chi đầu tư phát triển'
+            elif review['planType'] == 'TX':
+                review['planType'] = 'Chi thường xuyên'
+
 
         if review['planName'] is None:
             review['planName'] = ''
@@ -3713,15 +3715,39 @@ def xCrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
 
         if review['bidForm'] is None:
             review['bidForm'] = ''
+        else:
+            if review['bidForm'] == 'CHCT':
+                review['bidForm']  = 'Chào hàng cạnh tranh'
+            if review['bidForm'] == 'DTRR':
+                review['bidForm']  = 'Đấu thầu rộng rãi'
+            if review['bidForm'] == 'CHCTRG':
+                review['bidForm']  = 'Chào hàng cạnh tranh rút gọn'
+            if review['bidForm'] == 'CDTRG':
+                review['bidForm']  = 'Chỉ định thầu rút gọn'
 
         if review['isDomestic'] is None:
             review['isDomestic'] = ''
+        else:
+            if review['isDomestic'] == 1:
+                review['isDomestic']='Trong nước'
+            elif review['isDomestic'] == 0:
+                review['isDomestic'] = 'Quốc tế'
 
         if review['bidMode'] is None:
             review['bidMode'] = ''
+        else:
+            if review['bidMode'] == '1_MTHS':
+                review['bidMode'] = 'Một giai đoạn một túi hồ sơ'
+            elif review['bidMode'] == '1_HTHS':
+                review['bidMode'] = 'Một giai đoạn hai túi hồ sơ'
 
         if review['isInternet'] is None:
             review['isInternet'] = ''
+        else:
+            if review['isInternet'] == 1:
+                review['isInternet'] = 'Qua mạng'
+            elif review['isInternet'] == 0:
+                review['isInternet'] = 'Không qua mạng'
 
         if review['issueLocation'] is None:
             review['issueLocation'] = ''
@@ -3743,6 +3769,7 @@ def xCrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
 
         if review['bidValidityPeriodUnit'] is None:
             review['bidValidityPeriodUnit'] = ''
+        x = str(review['bidValidityPeriod']) + ' ' + str(review['bidValidityPeriodUnit'])
 
 
         if json_data['bidInvContractorOfflineDTO'] is not None:
@@ -3791,10 +3818,19 @@ def xCrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
         else:
             bien = ''
 
+        if review['investField'] == "HH":
+            review['investField'] = "Hàng hóa"
+        elif review['investField'] == "PTV":
+            review['investField'] = "Phi tư vấn"
+        elif review['investField'] == "TV":
+            review['investField'] = "Tư vấn"
+        elif review['investField'] == "XL":
+            review['investField'] = "Xây lắp"
 
         details.extend([
                         review['notifyNo'],
                             review['publicDate'],
+                            review["notifyVersion"],
                             review['planNo'],
                             review['planType'],
                             review['planName'],
@@ -3827,8 +3863,21 @@ def xCrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
                             review['bidPrice'],
                             dem,
                             bien,
-                            nhap1])
-        
+                            nhap1,
+                            datesucces])
+        bidType = upABN_db.bid_type(review['investField'])
+        bidMethod = upABN_db.bid_method(review['isInternet'])
+        crea_at = upABN_db.timeUpd()
+        tim_open = upABN_db.time_close(review['bidOpenDate'])
+        if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
+            news_id = upABN_db.upDataDB_1_DXT(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'],
+                                        review["notifyVersion"])
+            upABN_db.upDataDB_DXT(tim_open, news_id)
+
+            upABNDetail_db.upData_DXT(details, news_id)
+            print(1)
+
+
         with open(''+folder_path1+'/DXT.csv','a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)
@@ -3940,7 +3989,14 @@ def CrawlDetail_DT_DXT_2(code,session1,codes,folder_path1,notify_no):
         nhap1 = []
         nhap1.clear()
         dem = 0
+        data_dump = json.dumps(json_data)
+        datesucces = ''
         if review is not None:
+            if data_dump.find('bidoBidroundMngViewDTO') != -1:
+                if review['bidoBidroundMngViewDTO'] is not None:
+                    if review['bidoBidroundMngViewDTO']["successBidOpenDate"] is not None:
+                        datesucces = review['bidoBidroundMngViewDTO']["successBidOpenDate"]
+
             if review['bidSubmissionByContractorViewResponse'] is not None:
                 if review['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is not None:
                     for nhathau in review['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList']:
@@ -3986,7 +4042,7 @@ def CrawlDetail_DT_DXT_2(code,session1,codes,folder_path1,notify_no):
                                      ]) 
                         dem=dem+1
 
-                    return nhap1,dem
+                    return nhap1,dem,datesucces
                 
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")

@@ -344,3 +344,125 @@ def upData(details, id1):
           f"VALUES (%s, %s, %s, %s, %s, 3, NOW(), NOW());"
     cur.executemany(sql, records)
     conn.commit()
+
+def upData_DXT(details, id):
+    title1 = "Số TBMT"
+    title2 = "Mua Hồ sơ mời thầu"
+    title3 = "Tên gói thầu"
+    title4 = "Chủ đầu tư"
+    title5 = "Hình thức hợp đồng"
+    title6 = "Bên mời thầu"
+    title7 = "Hình thức lựa chọn nhà thầu"
+    title8 = "Giá gói thầu"
+    title9 = "Thời điểm hoàn thành"
+    title10 = "Trạng thái gói thầu"
+    title11 = "Số lượng nhà thầu"
+
+    sub_title = "Thông tin chi tiết"
+
+    key1 = title1.strip().lower().replace(' ', '-')
+    key1 = unidecode(key1)
+
+    key2 = title2.strip().lower().replace(' ', '-')
+    key2 = unidecode(key2)
+
+    key3 = title3.strip().lower().replace(' ', '-')
+    key3 = unidecode(key3)
+
+    key4 = title4.strip().lower().replace(' ', '-')
+    key4 = unidecode(key4)
+
+    key5 = title5.strip().lower().replace(' ', '-')
+    key5 = unidecode(key5)
+
+    key6 = title6.strip().lower().replace(' ', '-')
+    key6 = unidecode(key6)
+
+    key7 = title7.strip().lower().replace(' ', '-')
+    key7 = unidecode(key7)
+
+    key8 = title8.strip().lower().replace(' ', '-')
+    key8 = unidecode(key8)
+
+    key9 = title9.strip().lower().replace(' ', '-')
+    key9 = unidecode(key9)
+
+    key10 = title10.strip().lower().replace(' ', '-')
+    key10 = unidecode(key10)
+
+    key11 = title11.strip().lower().replace(' ', '-')
+    key11 = unidecode(key11)
+
+    value1 = f"{details[0]} - {details[2]}"
+
+    value2 = details[18]
+
+    value3 = details[6]
+
+    value4 = details[7]
+
+    if details[12] == "TG":
+        value5 = "Trọn Gói"
+    else:
+        value5 = ""
+
+    value6 = details[7]
+
+    value7 = details[11]
+
+    value8 = str(details[30])
+
+    value9 = time_close(details[34])
+
+    value10 = "Hoàn thành mở thầu"
+
+    value11 = str(len(details[33]))
+
+    records = [
+        (key1, sub_title, title1, value1, id),
+        (key2, sub_title, title2, value2, id),
+        (key3, sub_title, title3, value3, id),
+        (key4, sub_title, title4, value4, id),
+        (key5, sub_title, title5, value5, id),
+        (key6, sub_title, title6, value6, id),
+        (key7, sub_title, title7, value7, id),
+        (key8, sub_title, title8, value8, id),
+        (key9, sub_title, title9, value9, id),
+        (key10, sub_title, title10, value10, id),
+        (key11, sub_title, title11, value11, id)]
+    conn = connectdb.connect()
+    cur = conn.cursor()
+    sql = "INSERT INTO pccc_app_bidding_news_details(`key`, sub_title, title, value, news_id, type_id, created_at, updated_at) " \
+          f"VALUES (%s, %s, %s, %s, %s, 7, NOW(), NOW());"
+    cur.executemany(sql, records)
+    conn.commit()
+
+
+    sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
+    val = (value4,)
+    cur.execute(sql, val)
+    conn.commit()
+    cur.fetchone()
+    if cur.fetchone() is None:
+        myresult = ""
+    else:
+        myresult = cur.fetchone()[0]
+
+    if myresult != "":
+        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}';"
+        cur.execute(sql)
+        conn.commit()
+
+    sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
+    val = (value6,)
+    cur.execute(sql, val)
+    conn.commit()
+    cur.fetchone()
+    if cur.fetchone() is None:
+        myresult = ""
+    else: myresult = cur.fetchone()[0]
+
+    if myresult != "":
+        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Bên mời thầu' AND news_id = '{id}';"
+        cur.execute(sql)
+        conn.commit()
