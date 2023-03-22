@@ -3357,7 +3357,7 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
             if code[4] == 'DHT':
                 CrawlDetail_DT_DHT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
-           #elif code[4] == 'KCNTTT':
+            #elif code[4] == 'KCNTTT':
                 #if code[6] == 1:
                     #CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
                 #elif code[6] == 0:
