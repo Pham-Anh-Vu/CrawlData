@@ -3343,8 +3343,22 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
                         inputResultId = ''
                     else:
                         inputResultId = review['inputResultId']
+            
+            if review['bidField'] is None:
+                review['bidField'] = ''
 
-            codes.append([review['id'],review['notifyNo'],review['type'],review['stepCode'],review['statusForNotify'],inputResultId,review['isInternet']])
+            if review['notifyVersion'] is None:
+                review['notifyVersion'] = ''
+
+            codes.append([review['id'],
+                          review['notifyNo'],
+                          review['type'],
+                          review['stepCode'],
+                          review['statusForNotify'],
+                          inputResultId,
+                          review['isInternet'],
+                          review['bidField'],
+                          review['notifyVersion']])
 
         for code in codes:
             if code[4] == 'CNTTT':
@@ -3357,15 +3371,25 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
             if code[4] == 'DHT':
                 CrawlDetail_DT_DHT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
-            #elif code[4] == 'KCNTTT':
-                #if code[6] == 1:
-                    #CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
-                #elif code[6] == 0:
-                    #CrawDetail_DT_KCNTTT_KQM(inputResultId=inputResultId,details=details,session1=session1,codes=code,folder_path1=folder_path1)
+            elif code[4] == 'KCNTTT':
+                if code[6] == 1:
+                    CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
+                elif code[6] == 0:
+                    CrawDetail_DT_KCNTTT_KQM(inputResultId=code[5],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
             if code[4] == 'DXT':
                 if code[6] == 1:
-                    CrawlDetail_DT_DXT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1])
+                    if code[7] == 'TV':
+                        if code[3] == 'notify-contractor-step-2-kqmt':
+                            CrawlDetail_DT_DXT_TV_KQMT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1])
+                            #Code DXT KQMT
+                        elif code[3] == 'notify-contractor-step-3-dsntdkt':
+                            CrawlDetail_DT_DXT_TV_DSNTDKT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1])
+                            #Code DXT DSNTDXKT
+                        else:
+                            print(code)
+                    else:
+                        CrawlDetail_DT_DXT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1])
 
         codes.clear()
 
@@ -4121,6 +4145,68 @@ def CrawlDetail_DT_DXT_2(code,session1,codes,folder_path1,notify_no):
         pass
     return
 
+def CrawlDetail_DT_DXT_TV_KQMT(code,details,session1,codes,folder_path1,notify_no):
+    CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no)
+
+def CrawlDetail_DT_DXT_TV_DSNTDKT(code,details,session1,codes,folder_path1,notify_no):
+    CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no)
+
+    cookies = {
+        'COOKIE_SUPPORT': 'true',
+        'GUEST_LANGUAGE_ID': 'vi_VN',
+        '_ga': 'GA1.1.2001033887.1675655198',
+        'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
+        '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
+        '_ga_19996Z37EE': 'deleted',
+        '_ga_19996Z37EE': 'deleted',
+        '5321a273c51a75133e0fb1cd75e32e27': '90d57e96398dec0a2d505d16e8dab718',
+        'JSESSIONID': 'owDATgIVJ-YuugnyMw-nzYxCvTSkRN3goLdRNgDH.dc_app1_02',
+        'LFR_SESSION_STATE_20103': '1679540382420',
+        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2245525d5f4f58455e445a4a4217de',
+        '_ga_19996Z37EE': 'GS1.1.1679539415.4.1.1679541302.0.0.0',
+        'citrix_ns_id': 'AAM7bbwbZDsCd90AAAAAADuFeyfrzB16Q6f2O3wkwp-X_KBiAk_jQriThj-xlt31Ow==wscbZA==QjeK8Pl9WuQtdK8A7YtYBQF0pos=',
+    }
+
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/json',
+        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; 5321a273c51a75133e0fb1cd75e32e27=90d57e96398dec0a2d505d16e8dab718; JSESSIONID=owDATgIVJ-YuugnyMw-nzYxCvTSkRN3goLdRNgDH.dc_app1_02; LFR_SESSION_STATE_20103=1679540382420; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2245525d5f4f58455e445a4a4217de; _ga_19996Z37EE=GS1.1.1679539415.4.1.1679541302.0.0.0; citrix_ns_id=AAM7bbwbZDsCd90AAAAAADuFeyfrzB16Q6f2O3wkwp-X_KBiAk_jQriThj-xlt31Ow==wscbZA==QjeK8Pl9WuQtdK8A7YtYBQF0pos=',
+        'Origin': 'https://muasamcong.mpi.gov.vn',
+        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-3-dsntdkt&id=0d5e9c20-57be-447d-9345-29644b92e55f&notifyId=0d5e9c20-57be-447d-9345-29644b92e55f&inputResultId=undefined&bidOpenId=2fa2e1bb-853b-48f6-b16d-eba57b8f00ae&techReqId=8184eab0-7f56-4397-a086-12b6c597ebe7&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=1_HTHS&notifyNo=IB2300021760&planNo=PL2300015190&pno=undefined',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 OPR/96.0.0.0',
+        'sec-ch-ua': '"Not=A?Brand";v="8", "Chromium";v="110", "Opera GX";v="96"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+    }
+
+    
+    try:
+        session = session1
+        data = '{"id":"8184eab0-7f56-4397-a086-12b6c597ebe7"}'
+        response = requests.post(
+            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/ldtdsnt/tech-req-approval/get-by-id',
+            cookies=cookies,
+            headers=headers,
+            data=data,
+            allow_redirects=False,
+            verify= False,
+        )
+        json_data = response.json()
+        if json_data is not None:
+            a=b
+
+    except:
+
+        pass
+
+    return
+
+    
 
 
 def CrawlDetail_DT_CNTTT(code,details,session1,codes,folder_path1,code1,code2):
