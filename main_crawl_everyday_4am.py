@@ -6356,6 +6356,7 @@ def CrawDetail_DT_KCNTTT_2(inputResultId,session1,folder_path1,nhap2):
         pass
 
     except requests.exceptions.ConnectionError:
+        print(f"{type(err).__name__} was raised: {err}")
         f = open(''+folder_path1+"/log.txt", "a")
         h="{}".format(inputResultId)
         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 2: "+ h)
