@@ -74,6 +74,9 @@ class MyThread(threading.Thread):
         self.codes = [0]
 
         self.session = requests.Session()
+        self.adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20,max_retries=3)
+        self.session.mount('http://', self.adapter)
+        self.session.mount('https://', self.adapter)
 
         self.totalPageNumber = 0
 
@@ -269,6 +272,8 @@ def CrawlMaNhaThau(pageNumber,codes,details,session1,folder_path1):
         'sec-ch-ua-platform': '"Windows"',
     }
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session=session1
         data = '{"pageSize":10,"pageNumber":'+str(pageNumber)+',"queryParams":{"officePro":{"contains":null},"effRoleDate":{"greaterThanOrEqual":"'+str(startDay)+'T00:00:00.000Z","lessThanOrEqual":"'+str(endDay)+'T23:59:59.000Z"},"isForeignInvestor":{"equals":null},"roleType":{"equals":"NT"},"decNo":{"contains":null},"orgName":{"contains":null},"taxCode":{"contains":null},"orgNameOrOrgCode":{"contains":null},"agencyName":{"in":null}}}'
         response = session.post(
@@ -278,6 +283,7 @@ def CrawlMaNhaThau(pageNumber,codes,details,session1,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         json_data = response.json()
         reviews=json_data['content']
@@ -413,6 +419,8 @@ def CrawlDetailNhaThau(code,details,session1,codes,folder_path1):
     }
 
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"orgCode":"' + str(code) + '"}'
         response = session.post(
@@ -422,6 +430,7 @@ def CrawlDetailNhaThau(code,details,session1,codes,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         json_data = response.json()
         reviews = json_data
@@ -774,6 +783,8 @@ def CrawlMaBenMoiThau(pageNumber,codes,details,session1,folder_path1):
     }
 
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"pageSize":10,"pageNumber":' + str(pageNumber) + ',"queryParams":{"roleType":{"equals":"BMT"},"orgName":{"contains":null},"orgCode":{"contains":""},"orgNameOrOrgCode":{"contains":null},"agencyName":{"in":null},"effRoleDate":{"greaterThanOrEqual":"' + startDay + 'T00:00:00.000Z","lessThanOrEqual":"' + endDay +  'T23:59:59.000Z"}}}'
         response = session.post(
@@ -783,6 +794,7 @@ def CrawlMaBenMoiThau(pageNumber,codes,details,session1,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data = response.json()
@@ -908,6 +920,8 @@ def CrawlDetailBenMoiThau(code,details,session1,codes,folder_path1):
     }
 
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"orgCode":"'+code+'"}'
         response = session.post(
@@ -917,6 +931,7 @@ def CrawlDetailBenMoiThau(code,details,session1,codes,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data = response.json()
@@ -1334,6 +1349,8 @@ def CrawlMaTinTuc(pageNumber,codes,details,session1,folder_path1):
     }
 
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"pageSize":8,"pageNumber":"'+str(pageNumber)+'","query":[{"index":"es-contractor-selection","keyWord":"","matchType":"all","matchFields":["notifyNo","bidName"],"filters":[{"fieldName":"publicDate","searchType":"range","from":"'+startDay+'T00:00:00.000Z","to":"'+endDay+'T23:59:59.059Z"}]}]}'
         response = session.post(
@@ -1343,6 +1360,7 @@ def CrawlMaTinTuc(pageNumber,codes,details,session1,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data=response.json()
@@ -1478,6 +1496,8 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
         'sec-ch-ua-platform': '"Windows"',
     }
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session=session1
         data = '{"id":"'+code+'"}'
         response = session.post(
@@ -1487,6 +1507,7 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data=response.json()
@@ -1755,7 +1776,8 @@ def CrawlDetail_TT_KHLCNT(code,details,session1,codes,folder_path1):
         details.clear()
         pass
 
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as err :
+        print(f"{type(err).__name__} was raised: {err}")
         f = open(''+folder_path1+"/log.txt", "a")
         h="{}".format(code)
         f.write("Ho so KHLCNT bi loi khong lay duoc du lieu: "+ h)
@@ -2216,6 +2238,8 @@ def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
         'sec-ch-ua-platform': '"Windows"',
     }
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session=session1
         data = '{"id":"'+code+'"}'
         response = session.post(
@@ -2225,6 +2249,7 @@ def CrawlDetail_TT_KHLCNT_1(code,session1,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         reviews = response.json()
         
@@ -2473,6 +2498,8 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
     }
 
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session= session1
         data = '{"id":"'+code+'"}'
         response = session.post(
@@ -2482,6 +2509,7 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data = response.json()
@@ -2871,7 +2899,8 @@ def CrawlDetail_TT_TBMT_CDT(code,details,session1,codes,folder_path1):
         details.clear()
         pass
 
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as err :
+        print(f"{type(err).__name__} was raised: {err}")
         f = open(''+folder_path1+"/log.txt", "a")
         h="{}".format(code)
         f.write("Ho so TBMT CDT bi loi khong lay duoc du lieu: "+ h)
@@ -2986,6 +3015,8 @@ def CrawlDetail_TT_DA(code,details,session1,codes,folder_path1):
     }
 
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session= session1
         data = '{"id":"'+code+'"}'
         response = session.post(
@@ -2995,6 +3026,8 @@ def CrawlDetail_TT_DA(code,details,session1,codes,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
+            
         )
 
         json_data=response.json()
@@ -3124,7 +3157,8 @@ def CrawlDetail_TT_DA(code,details,session1,codes,folder_path1):
         details.clear()
         pass
 
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as err :
+        print(f"{type(err).__name__} was raised: {err}")
         f = open(''+folder_path1+"/log.txt", "a")
         h="{}".format(code)
         f.write("Ho so du an bi loi khong lay duoc du lieu: "+ h)
@@ -3343,9 +3377,17 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
                         inputResultId = ''
                     else:
                         inputResultId = review['inputResultId']
-            
-            if review['bidField'] is None:
-                review['bidField'] = ''
+            review_data = json.dumps(review)
+            bidField = ''
+
+            if review_data.find('bidField') != -1 :
+                if review['bidField'] is None:
+                    review['bidField'] = ''
+                    bidField = ''
+                else:
+                    bidField = review['bidField']
+            else:
+                bidField = ''
 
             if review['notifyVersion'] is None:
                 review['notifyVersion'] = ''
@@ -3357,7 +3399,7 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
                           review['statusForNotify'],
                           inputResultId,
                           review['isInternet'],
-                          review['bidField'],
+                          bidField,
                           review['notifyVersion']])
 
         for code in codes:
@@ -3368,14 +3410,14 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
                 if code[6] == 0:
                     CrawDetail_DT_CNTTT_KQM(inputResultId=code[5],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
-            if code[4] == 'DHT':
-                CrawlDetail_DT_DHT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
+            #if code[4] == 'DHT':
+                #CrawlDetail_DT_DHT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
-            elif code[4] == 'KCNTTT':
-                if code[6] == 1:
-                    CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
-                elif code[6] == 0:
-                    CrawDetail_DT_KCNTTT_KQM(inputResultId=code[5],details=details,session1=session1,codes=code,folder_path1=folder_path1)
+            #if code[4] == 'KCNTTT':
+                #if code[6] == 1:
+                    #CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
+                #elif code[6] == 0:
+                    #CrawDetail_DT_KCNTTT_KQM(inputResultId=code[5],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
             if code[4] == 'DXT':
                 if code[6] == 1:
@@ -3388,6 +3430,7 @@ def CrawlMaTinTucDongThau(pageNumber,codes,details,session1,folder_path1):
                             #Code DXT DSNTDXKT
                         else:
                             print(code)
+                            #Tim con code nao khac khong
                     else:
                         CrawlDetail_DT_DXT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1])
 
@@ -3531,6 +3574,8 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
 
 
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"id":"'+code+'"}'
         response = session.post(
@@ -3540,9 +3585,11 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         json_data=response.json()
-
+        i = random.randrange(1,10)
+        time.sleep(i)
         data2 = '{"notifyNo":"'+codes[1]+'","type":"TBMT","packType":0}'
         response2 = session.post(
             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/ldtkqmt/bid-notification-p/get-by-id',
@@ -3551,10 +3598,12 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
             data=data2,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         json_data2=response2.json()
         review2=json_data2
-
+        i = random.randrange(1,10)
+        time.sleep(i)
         data3 = '{"id":"'+code+'"}'
         response3 = session.post(
             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/lcnt/bid-notify-contractor-out/get-by-id',
@@ -3563,6 +3612,7 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         json_data3=response3.json()
 
@@ -3912,13 +3962,14 @@ def CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no):
                             bien,
                             nhap1,
                             datesucces])
+        
         bidType = upABN_db.bid_type(review['investField'])
         bidMethod = upABN_db.bid_method(review['isInternet'])
         crea_at = upABN_db.timeUpd()
         tim_open = upABN_db.time_close(review['bidOpenDate'])
         if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
-            news_id = upABN_db.upDataDB_1_DXT(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'],
-                                        review["notifyVersion"])
+            news_id = upABN_db.upDataDB_1_DXT(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
+            
             upABN_db.upDataDB_DXT(tim_open, news_id)
 
             upABNDetail_db.upData_DXT(details, news_id)
@@ -4019,6 +4070,8 @@ def CrawlDetail_DT_DXT_2(code,session1,codes,folder_path1,notify_no):
         'sec-ch-ua-platform': '"Windows"',
     }
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"id":"'+code+'"}'
         response = session.post(
@@ -4028,6 +4081,7 @@ def CrawlDetail_DT_DXT_2(code,session1,codes,folder_path1,notify_no):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         json_data = response.json()
         review=json_data
@@ -4186,24 +4240,230 @@ def CrawlDetail_DT_DXT_TV_DSNTDKT(code,details,session1,codes,folder_path1,notif
 
     
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"id":"8184eab0-7f56-4397-a086-12b6c597ebe7"}'
-        response = requests.post(
+        response = session.post(
             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/ldtdsnt/tech-req-approval/get-by-id',
             cookies=cookies,
             headers=headers,
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         json_data = response.json()
+        data = json.dumps(json_data)
         if json_data is not None:
-            a=b
+            if json_data['bidNoContractorResponse'] is not None:
+                if json_data['bidNoContractorResponse']['bidNotification'] is not None:
+                    review1 = json_data['bidNoContractorResponse']['bidNotification']
 
-    except:
+            if json_data['bidrTechReqApprovalDTO'] is not None:
+                if json_data['bidrTechReqApprovalDTO']['bidReqApprovalDetail'] is not None:
+                    review2 = json_data['bidrTechReqApprovalDTO']['bidReqApprovalDetail']
+                
+            if json_data['lsBideLotEvalResultViewDTO'] is not None:
+                dsnt = json_data['lsBideLotEvalResultViewDTO']
 
+        if review1['bidNo'] is None:
+            review1 ['bidNo'] = ''
+
+        if review1['status'] is None:
+            review1['status'] = ''
+        else:
+            if review1['status'] == '01':
+                review1['status'] = 'Đã đăng tải'
+        
+        if review1['procuringEntityName'] is None:
+            review1['procuringEntityName'] = ''
+
+        if review1['investorName'] is None:
+            review1['investorName'] = ''
+        
+        if review1['bidName'] is None:
+            review1['bidName'] = ''
+        
+        if review1['bidPrice'] is None:
+            review1['bidPrice'] = ''
+        
+        if review1['bidEstimatePrice'] is None:
+            review1['bidEstimatePrice'] = ''
+
+        if review1['contractType'] is None:
+            review1['contractType'] = ''
+        else:
+            if review1['contractType'] == 'TG':
+                review1['contractType'] = 'Trọn gói'
+
+        if review1['bidForm'] is None:
+            review1['bidForm'] = ''
+        else:
+            if review1['bidForm'] == 'CHCT':
+                review1['bidForm']  = 'Chào hàng cạnh tranh'
+            if review1['bidForm'] == 'DTRR':
+                review1['bidForm']  = 'Đấu thầu rộng rãi'
+            if review1['bidForm'] == 'CHCTRG':
+                review1['bidForm']  = 'Chào hàng cạnh tranh rút gọn'
+            if review1['bidForm'] == 'CDTRG':
+                review1['bidForm']  = 'Chỉ định thầu rút gọn'
+
+        if review1['bidMode'] is None:
+            review1['bidMode'] = ''
+        else:
+            if review1['bidMode'] == '1_MTHS':
+                review1['bidMode'] = 'Một giai đoạn một túi hồ sơ'
+            elif review1['bidMode'] == '1_HTHS':
+                review1['bidMode'] = 'Một giai đoạn hai túi hồ sơ'
+
+        if review1['investField'] is None:
+            review1['investField'] = ''
+        else:
+            if review1['investField'] == 'TV':
+                review1['investField'] = 'Tư vấn'
+
+        if review1['capitalDetail'] is None:
+            review1['capitalDetail'] = ''
+        
+        if review1['isDomestic'] is None:
+            review1['isDomestic'] = ''
+        else:
+            if review1['isDomestic'] == 1 or review1['isDomestic'] == '1':
+                review1['isDomestic'] = 'Trong nước'
+            else:
+                review1['isDomestic'] = 'Quốc tế'
+
+        if review1['contractPeriod'] is None:
+            contractPeriod = ''
+        else:
+            if review1['contractPeriodUnit'] is None:
+                contractPeriod = ''
+            else:
+                if review1['contractPeriodUnit'] == 'D':
+                    review1['contractPeriodUnit'] = 'ngày'
+                elif review1['contractPeriodUnit'] == 'M':
+                    review1['contractPeriodUnit'] = 'tháng'
+                contractPeriod = str(review1['contractPeriodUnit']) + ' '+ review1['contractPeriodUnit']
+
+        if review2['approvalDate'] is None:
+            review2['approvalDate'] = ''
+        
+        if review2['decisionNo'] is None:
+            review2['decisionNo'] =''
+
+        if review2['decisionAgencyName'] is None:
+            review2['decisionAgencyName'] =''
+
+        if review2['decisionFileName'] is None:
+            review2['decisionFileName'] =''
+
+        if review2['decisionFileId'] is None:
+            link = ''
+        else:
+            link = 'http://localhost:1234/api/download/file/browser/public?fileId='+review2['decisionFileId']
+
+        reason = ''
+        list_nt_pass = []
+        list_nt_no_pass = []
+        MAP_EVAL_TYPE=[('1','Nhà thầu không đạt tại bước Đánh giá Tính hợp lệ'),
+        ('2','Nhà thầu không đạt tại bước Đánh giá Năng lực kinh nghiệm'),
+        ('3', 'Nhà thầu không đạt tại bước Đánh giá Kỹ thuật'),
+        ('5','Nhà thầu không đạt tại bước Đánh giá Năng lực kinh nghiệm (Nhân sự chủ chốt)'),
+        ('6','Nhà thầu không đạt tại bước Đánh giá Năng lực kinh nghiệm (Thiết bị thi công)'),
+        ('5,6','Nhà thầu không đạt tại bước Đánh giá Năng lực kinh nghiệm (Nhân sự chủ chốt và thiết bị thi công)'),
+        ('2,5,6','Nhà thầu không đạt tại bước Đánh giá Năng lực kinh nghiệm, Nhân sự chủ chốt, thiết bị thi công'),
+        ('2,5','Nhà thầu không đạt tại bước Đánh giá Năng lực kinh nghiệm, Nhân sự chủ chốt'),
+        ('2,6','Nhà thầu không đạt tại bước Đánh giá Năng lực kinh nghiệm, thiết bị thi công')]
+        for nt in dsnt:
+            if nt['result'] is None:
+                nt['result'] = ''
+            if nt['result'] == '2' or nt['result'] == 0:
+                if nt['evalType'] == 3 and nt['result'] == '2':
+                    if nt['contractorCode'] is None:
+                        nt['contractorCode'] = ''
+                    
+                    if nt['contractorName'] is None:
+                        nt['contractorName'] = ''
+
+                    if nt['techScore'] is None:
+                        nt['techScore'] = ''
+                    
+                    list_nt_pass.append([nt['contractorCode'],nt['contractorName'],nt['techScore'],contractPeriod,'Đạt yêu cầu kỹ thuật'])
+                
+                if nt['result'] == 0:
+                    if nt['contractorCode'] is None:
+                        nt['contractorCode'] = ''
+                    
+                    if nt['contractorName'] is None:
+                        nt['contractorName'] = ''
+
+                    if nt['techScore'] is None:
+                        nt['techScore'] = ''
+
+                    if nt['evalType'] is None:
+                        nt['evalType']=''
+                    else:
+                        for i in MAP_EVAL_TYPE:
+                            if nt['evalType'] == i[0]:
+                                reason = i[1]
+
+                    list_nt_no_pass.append([nt['contractorCode'],nt['contractorName'],nt['techScore'],contractPeriod,reason])         
+
+    except requests.ReadTimeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
         pass
 
+    except requests.exceptions.ConnectionError:
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.Timeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except Exception as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open(''+folder_path1+"/log.txt", "a")
+        h="{}".format(code)
+        j="{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: "+ h +', ma: '+j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
     return
 
     
@@ -4258,6 +4518,8 @@ def CrawlDetail_DT_CNTTT(code,details,session1,codes,folder_path1,code1,code2):
         nhap2.clear()
         nhap2=CrawDetail_DT_CNTTT_2(inputResultId=code2,session1=session1,folder_path1=folder_path1,nhap2=nhap2)
         #Request theo id trong list_TBMT_CDT de lay cac thong tin cho vao CT_TBMT_CDT
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"id":"'+code+'"}'
         response = session.post(
@@ -4267,6 +4529,7 @@ def CrawlDetail_DT_CNTTT(code,details,session1,codes,folder_path1,code1,code2):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data1=response.json()
@@ -4569,6 +4832,8 @@ def CrawDetail_DT_CNTTT_1(notifyNo,session1,folder_path1,dem):
         'sec-ch-ua-platform': '"Windows"',
     }
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data2 = '{"notifyNo":"'+notifyNo+'","type":"TBMT","packType":0}'
         response2 = session.post(
@@ -4578,6 +4843,7 @@ def CrawDetail_DT_CNTTT_1(notifyNo,session1,folder_path1,dem):
             data=data2,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data2=response2.json()
@@ -4719,7 +4985,8 @@ def CrawDetail_DT_CNTTT_2(inputResultId,session1,folder_path1,nhap2):
         'sec-ch-ua-platform': '"Windows"',
     }
     try:
-
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data3 = '{"id":"'+inputResultId+'"}'
         response3 = session.post(
@@ -4729,6 +4996,7 @@ def CrawDetail_DT_CNTTT_2(inputResultId,session1,folder_path1,nhap2):
             data=data3,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data3=response3.json()
@@ -4864,6 +5132,8 @@ def CrawDetail_DT_CNTTT_KQM(inputResultId,details,session1,codes,folder_path1):
         'sec-ch-ua-platform': '"Windows"',
     }
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"id":"'+inputResultId+'"}'
         response = session.post(
@@ -4873,6 +5143,7 @@ def CrawDetail_DT_CNTTT_KQM(inputResultId,details,session1,codes,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         json_data1=response.json()
         if json_data1 is None:
@@ -5052,7 +5323,8 @@ def CrawlDetail_DT_DHT(code,details,session1,codes,folder_path1):
     try:
         #Request theo id trong list_TBMT_CDT de lay cac thong tin cho vao CT_TBMT_CDT
         session = session1
-
+        i = random.randrange(1,10)
+        time.sleep(i)
         data = '{"id":"'+code+'"}'
         response = session.post(
             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/lcnt/bid-po-bido-notify-contractor-view/get-by-id',
@@ -5061,6 +5333,7 @@ def CrawlDetail_DT_DHT(code,details,session1,codes,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         json_data1=response.json()
 
@@ -5357,6 +5630,8 @@ def CrawlDetail_DT_KCNTTT(code,details,session1,codes,folder_path1,code1,code2):
         nhap2.clear()
         nhap2=CrawDetail_DT_KCNTTT_2(inputResultId=code2,session1=session1,folder_path1=folder_path1,nhap2=nhap2)
         #Request theo id trong list_TBMT_CDT de lay cac thong tin cho vao CT_TBMT_CDT
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"id":"'+code+'"}'
         response = session.post(
@@ -5366,6 +5641,7 @@ def CrawlDetail_DT_KCNTTT(code,details,session1,codes,folder_path1,code1,code2):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data1=response.json()
@@ -5663,6 +5939,8 @@ def CrawDetail_DT_KCNTTT_KQM(inputResultId,details,session1,codes,folder_path1):
         'sec-ch-ua-platform': '"Windows"',
     }
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data = '{"id":"'+inputResultId+'"}'
         response = session.post(
@@ -5672,6 +5950,7 @@ def CrawDetail_DT_KCNTTT_KQM(inputResultId,details,session1,codes,folder_path1):
             data=data,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
         json_data1=response.json()
         if json_data1 is None:
@@ -5851,6 +6130,8 @@ def CrawDetail_DT_KCNTTT_1(notifyNo,session1,folder_path1,dem):
         'sec-ch-ua-platform': '"Windows"',
     }
     try:
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data2 = '{"notifyNo":"'+notifyNo+'","type":"TBMT","packType":0}'
         response2 = session.post(
@@ -5860,6 +6141,7 @@ def CrawDetail_DT_KCNTTT_1(notifyNo,session1,folder_path1,dem):
             data=data2,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data2=response2.json()
@@ -6001,7 +6283,8 @@ def CrawDetail_DT_KCNTTT_2(inputResultId,session1,folder_path1,nhap2):
         'sec-ch-ua-platform': '"Windows"',
     }
     try:
-
+        i = random.randrange(1,10)
+        time.sleep(i)
         session = session1
         data3 = '{"id":"'+inputResultId+'"}'
         response3 = session.post(
@@ -6011,6 +6294,7 @@ def CrawDetail_DT_KCNTTT_2(inputResultId,session1,folder_path1,nhap2):
             data=data3,
             allow_redirects=False,
             verify= False,
+            timeout=30,
         )
 
         json_data3=response3.json()
@@ -6122,18 +6406,18 @@ try:
     if not os.path.isdir(folder_path):
         os.mkdir(folder_path)
 
-    thread_TinTuc = 10
+    thread_TinTuc = 15
     #DA
     #KHLCNT
     #TBMT CDT
 
-    thread_NhaThau = 1
+    thread_NhaThau = 2
 
-    thread_BenMoiThau = 1
+    thread_BenMoiThau = 2
 
-    thread_TinTucDongThau = 10
+    thread_TinTucDongThau = 15
 
-    thread_upData = 1
+    thread_upData = 0
 
     thread_changeData = 0
 
