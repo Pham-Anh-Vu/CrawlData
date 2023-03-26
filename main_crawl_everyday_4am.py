@@ -3445,28 +3445,22 @@ def CrawlMaTinTucDongThau(pageNumber, codes, details, session1, folder_path1):
             if review['notifyVersion'] is None:
                 review['notifyVersion'] = ''
 
-            if review['bidField'] is None:
-                review['bidField'] = ''
-
             if review['notifyVersion'] is None:
                 review['notifyVersion'] = ''
 
-            codes.append([review['id'],
+            codes.append([review['id'],#0
+                          review['notifyNo'],#1
                           
-                          review['notifyNo'],
+                          review['type'],#2
                           
-                          review['type'],
+                          review['stepCode'],#3
                           
-                          review['stepCode'],
+                          review['statusForNotify'],#4
                           
-                          review['statusForNotify'],
+                          inputResultId,#5
                           
-                          inputResultId,
-                          
-                          review['isInternet'],
-                          bidField,
-                          review['notifyVersion'],
-                          review['bidField'],
+                          review['isInternet'],#6
+                          bidField,#7
                           review['notifyVersion']])
 
         for code in codes:

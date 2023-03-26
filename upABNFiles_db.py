@@ -49,7 +49,11 @@ def upData(details, result, link1):
 
 def up_pccc_app_medias(code):
     url = 'http://localhost:1234/api/download/file/browser/public?fileId='+code
-    name,type,path, file_name_for_user = upFileDinhKemHSMT.downFileAndUpLoad(url=url)
+    #name,type,path, file_name_for_user = upFileDinhKemHSMT.downFileAndUpLoad(url=url)
+    name = 'a.pdf'
+    type = 'pdf'
+    path = 'a'
+    file_name_for_user = 'a.pdf'
     conn = connectdb.connect()
     cur = conn.cursor()
     sql= "INSERT INTO pccc_app_medias (name, type, path, created_at, updated_at) VALUES (%s, %s, %s, NOW(), NOW())"
