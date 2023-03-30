@@ -595,3 +595,191 @@ def upData_DXT_TV(details, id):
         sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Tên bên mời thầu' AND news_id = '{id}';"
         cur.execute(sql)
         conn.commit()
+
+
+def upData_CNTTT(details, id1):
+    titles1 = 'Số TBMT'
+
+    titles2 = 'Chủ đầu tư'
+
+    titles3 = 'Hình thức đấu thầu'
+
+    titles4 = 'Hình thức dự thầu'
+
+    titles5 = 'Tên gói thầu'
+
+    titles6 = 'Giá gói thầu'
+
+    titles7 = 'Giá dự toán'
+
+    titles8 = 'Thời điểm hoàn thành'
+
+    titles9 = 'Thời điểm đăng tải TBMT'
+
+    titles10 = 'Tên nhà thầu'
+
+    titles11 = 'Số ĐKKD'
+
+    titles12 = 'Giá dự thầu (VND)'
+
+    titles13 = 'Tỷ lệ giảm giá (%)'
+
+    titles14 = 'Điểm kỹ thuật'
+
+    titles15 = 'Giá đánh giá'
+
+    titles16 = 'Giá dự thầu sau giảm giá (không tính các khoản tạm tính và dự phòng nếu có) (VND)'
+
+    titles17 = 'Giá trúng thầu'
+
+    titles18 = 'Thời gian thực hiện hợp đồng'
+
+    titles19 = 'Ngày phê duyệt'
+
+    titles20 = 'Báo cáo tổng hợp đánh giá E-HSDT và phê duyệt danh sách xếp hạng nhà thầu'
+
+    titles21 = 'Quyết định phê duyệt kết quả đấu thầu'
+
+    key1 = titles1.strip().lower().replace(' ', '-')
+    key1 = unidecode(key1)
+
+    key2 = titles2.strip().lower().replace(' ', '-')
+    key2 = unidecode(key2)
+
+    key3 = titles3.strip().lower().replace(' ', '-')
+    key3 = unidecode(key3)
+
+    key4 = titles4.strip().lower().replace(' ', '-')
+    key4 = unidecode(key4)
+
+    key5 = titles5.strip().lower().replace(' ', '-')
+    key5 = unidecode(key5)
+
+    key6 = titles6.strip().lower().replace(' ', '-')
+    key6 = unidecode(key6)
+
+    key7 = titles7.strip().lower().replace(' ', '-')
+    key7 = unidecode(key7)
+
+    key8 = titles8.strip().lower().replace(' ', '-')
+    key8 = unidecode(key8)
+
+    key9 = titles9.strip().lower().replace(' ', '-')
+    key9 = unidecode(key9)
+
+    key10 = titles10.strip().lower().replace(' ', '-')
+    key10 = unidecode(key10)
+
+    key11 = titles11.strip().lower().replace(' ', '-')
+    key11 = unidecode(key11)
+
+    key12 = titles12.strip().lower().replace(' ', '-')
+    key12 = unidecode(key12)
+
+    key13 = titles13.strip().lower().replace(' ', '-')
+    key13 = unidecode(key13)
+
+    key14 = titles14.strip().lower().replace(' ', '-')
+    key14 = unidecode(key14)
+
+    key15 = titles15.strip().lower().replace(' ', '-')
+    key15 = unidecode(key15)
+
+    key16 = titles16.strip().lower().replace(' ', '-')
+    key16 = unidecode(key16)
+
+    key17 = titles17.strip().lower().replace(' ', '-')
+    key17 = unidecode(key17)
+
+    key18 = titles18.strip().lower().replace(' ', '-')
+    key18 = unidecode(key18)
+
+    key19 = titles19.strip().lower().replace(' ', '-')
+    key19 = unidecode(key19)
+
+    key20 = titles20.strip().lower().replace(' ', '-')
+    key20 = unidecode(key20)
+
+    key21 = titles21.strip().lower().replace(' ', '-')
+    key21 = unidecode(key21)
+
+    sub_title = 'Thông tin chi tiết'
+
+    value1 = f"{details[0]}-{details[2]}"
+    value2 = details[8]
+    value3 = details[11]
+    value4 = f"Đấu thầu {details[16].lower()}"
+    value5 = details[6]
+    value6 = str('{:,}'.format(int(details[26])).replace(',', '.')) + 'VND'
+    value7 = value6
+    value8 = ''
+    value9 = time_post(details[1])
+    value10 = details[36][0][1]
+
+    conn = connectdb.connect()
+    cur = conn.cursor()
+    sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
+    val = (value10,)
+    cur.execute(sql, val)
+    a = cur.fetchone()
+    conn.commit()
+    value11 = ''
+    if a != None:
+        value11 = str(a[15])
+
+    for i in details[35]:
+        if details[36][0][1] != i[1]:
+            continue
+        value12 = str('{:,}'.format(int(i[2])).replace(',', '.')) + 'VND'
+        value13 = str((i[3]))
+        value16 = str('{:,}'.format(int(i[4])).replace(',', '.')) + 'VND'
+    value14 = ''
+    value15 = ''
+    value17 = str('{:,}'.format(int(details[36][0][3])).replace(',', '.')) + 'VND'
+    value18 = ''
+    value19 = details[38]
+    value20 = ''
+    value21 = ''
+
+    records = [
+        (key1, sub_title, titles1, value1, id1),
+        (key2, sub_title, titles2, value2, id1),
+        (key3, sub_title, titles3, value3, id1),
+        (key4, sub_title, titles4, value4, id1),
+        (key5, sub_title, titles5, value5, id1),
+        (key6, sub_title, titles6, value6, id1),
+        (key7, sub_title, titles7, value7, id1),
+        (key8, sub_title, titles8, value8, id1),
+        (key9, sub_title, titles9, value9, id1),
+        (key10, sub_title, titles10, value10, id1),
+        (key11, sub_title, titles11, value11, id1),
+        (key12, sub_title, titles12, value12, id1),
+        (key13, sub_title, titles13, value13, id1),
+        (key14, sub_title, titles14, value14, id1),
+        (key15, sub_title, titles15, value15, id1),
+        (key16, sub_title, titles16, value16, id1),
+        (key17, sub_title, titles17, value17, id1),
+        (key18, sub_title, titles18, value18, id1),
+        (key19, sub_title, titles19, value19, id1),
+        (key20, sub_title, titles20, value20, id1),
+        (key21, sub_title, titles21, value21, id1),
+    ]
+    sql = "INSERT INTO pccc_app_bidding_news_details(`key`, sub_title, title, value, news_id, type_id, created_at, updated_at) " \
+          f"VALUES (%s, %s, %s, %s, %s, 8, NOW(), NOW());"
+    cur.executemany(sql, records)
+    conn.commit()
+
+    sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
+    val = (value10,)
+    cur.execute(sql, val)
+    a = cur.fetchone()
+    conn.commit()
+    if a is None:
+        myresult = ""
+    else:
+        myresult = a[0]
+
+    if myresult != "":
+        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}';"
+        cur.execute(sql)
+        conn.commit()

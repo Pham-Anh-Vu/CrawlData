@@ -6,10 +6,10 @@ import datetime
 def connect():
     conn = mariadb.connect(
         user="root",
-        password="Nmd021200.",
+        password="123123",
         host="127.0.0.1",
         port=3306,
-        database="test"
+        database="abc"
     )
     return conn
 
@@ -73,6 +73,11 @@ def date_app(data):
         dat_app = datetime.datetime.strftime(dat_app, '%Y-%m-%d %H:%M:%S')
     return dat_app
 
+def date_app2(data):
+    dat_app = datetime.datetime.strptime(data, '%Y-%m-%dT%H:%M:%S.%f%z')
+    dat_app = datetime.datetime.strftime(dat_app, '%Y-%m-%d %H:%M:%S')
+    return dat_app
+
 def upDataDB(type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no, time_bid_closing, time_posting, date_of_approval):
     conn = connect()
     mycursor = conn.cursor()
@@ -83,6 +88,7 @@ def upDataDB(type_id, bid_type, bid_method, aujusted_limited, created_at, update
     news_id = mycursor.lastrowid
     news_id = int(news_id)
     return news_id
+
 def yesterday():
     yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
     # yesterday = yesterday.date()
@@ -124,3 +130,4 @@ def upDataDB_1_DXT_TV(type_id, bid_type, bid_method, aujusted_limited, created_a
     news_id = mycursor.lastrowid
     news_id = int(news_id)
     return news_id
+
