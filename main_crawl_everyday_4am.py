@@ -14,9 +14,12 @@ from datetime import datetime, timedelta
 import upABNDetail_db
 import upABNFiles_db
 import upABN_db
+import LienDanh
 from pympler import muppy
 
 import upABO_db
+import upABO_result_complete_gd_hsdt
+import upABRGoods_db
 
 all_objects = muppy.get_objects()
 
@@ -2755,8 +2758,7 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
         listHangHoa = []
         listHangHoa.clear()
         if review['investField'] == 'Hàng hóa' or review['investField'] == 'HH':
-            # listx = crawlDetail_HangHoa(data=json_data)
-            listx = [1]
+            listx = crawlDetail_HangHoa(data=json_data)
             listHangHoa.extend(listx)
 
         listFileDinhKemHSMT = []
@@ -2765,16 +2767,6 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
             if json_data['bidoInvBiddingDTO'] != []:
                 listz=crawlDetail_FileDinhKemHSMT(data=json_data['bidoInvBiddingDTO'])
                 listFileDinhKemHSMT.extend(listz)
-
-        listFileDinhKemHSMT = []
-        listFileDinhKemHSMT.clear()
-        if json_data['bidoInvBiddingDTO'] is not None:
-            if json_data['bidoInvBiddingDTO'] != []:
-                listz = crawlDetail_FileDinhKemHSMT(data=json_data['bidoInvBiddingDTO'])
-                listFileDinhKemHSMT.extend(listz)
-
-        listFileHSMT = []
-        listFileHSMT.clear()
 
         if review['isInternet'] == 'Qua mạng' or review['isInternet'] == '1' or review['isInternet'] == 1:
             list_file = []
@@ -3023,6 +3015,15 @@ def crawlDetail_HangHoa(data):
                         description = hh['description']
                         list_HH.append([name, uom, qty, fromDate, toDate, description])
     return list_HH
+
+def crawlDetail_HangHoa_CNTTT(data):
+    if data['bideContractorInputResultDTO'] is not None:
+        if data['bideContractorInputResultDTO']['lotResultDTO'] is not None:
+            if data['bideContractorInputResultDTO']['lotResultDTO'][0]['goodsList'] is not None:
+                data_list = data['bideContractorInputResultDTO']['lotResultDTO'][0]['goodsList']
+                reviews = json.loads(data_list)
+                for review in reviews:
+                    return review['formValue']['lotContent']['Table']
 
 
 def CrawlDetail_TT_DA(code, details, session1, codes, folder_path1):
@@ -3476,9 +3477,9 @@ def CrawlMaTinTucDongThau(pageNumber, codes, details, session1, folder_path1):
             #if code[4] == 'DHT':
                 #CrawlDetail_DT_DHT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
-            #if code[4] == 'KCNTTT':
-                #if code[6] == 1:
-                    #CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
+            if code[4] == 'KCNTTT':
+                if code[6] == 1:
+                    CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
                 #elif code[6] == 0:
                     #CrawDetail_DT_KCNTTT_KQM(inputResultId=code[5],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
@@ -4636,7 +4637,8 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
 
         nhap2 = [0]
         nhap2.clear()
-        nhap2 = CrawDetail_DT_CNTTT_2(inputResultId=code2, session1=session1, folder_path1=folder_path1, nhap2=nhap2)
+        nhap2, decisionCNTTT, listHangHoa = CrawDetail_DT_CNTTT_2(inputResultId=code2, session1=session1, folder_path1=folder_path1, nhap2=nhap2)
+        print("111222")
         # Request theo id trong list_TBMT_CDT de lay cac thong tin cho vao CT_TBMT_CDT
         i = random.randrange(1,10)
         time.sleep(i)
@@ -4733,6 +4735,23 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
 
         if review1['planType'] is None:
             review1['planType'] = 0
+        else:
+            if review1['planType'] == 'DTPT':
+                review1['planType'] = 'Chi đầu tư phát triển'
+            elif review1['planType'] == 'TX':
+                review1['planType'] = 'Chi thường xuyên'
+
+        if review1['investField'] is None:
+            review1['investField'] = ''
+        else:
+            if review1['investField'] == 'XL':
+                review1['investField'] = 'Xây lắp'
+            elif review1['investField'] == 'TV':
+                review1['investField'] = 'Tư vấn'
+            elif review1['investField'] == 'PTV':
+                review1['investField'] = 'Phi tư vấn'
+            elif review1['investField'] == 'HH':
+                review1['investField'] = 'Hàng hóa'
 
         if review1['planName'] is None:
             review1['planName'] = 0
@@ -4751,15 +4770,39 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
 
         if review1['bidForm'] is None:
             review1['bidForm'] = 0
+        else:
+            if review1['bidForm'] == 'CHCT':
+                bidForm = 'Chào hàng cạnh tranh'
+            if review1['bidForm'] == 'DTRR':
+                bidForm = 'Đấu thầu rộng rãi'
+            if review1['bidForm'] == 'CHCTRG':
+                bidForm = 'Chào hàng cạnh tranh rút gọn'
+            if review1['bidForm'] == 'CDTRG':
+                bidForm = 'Chỉ định thầu rút gọn'
 
         if review1['isDomestic'] is None:
             review1['isDomestic'] = 0
+        else:
+            if review1['isDomestic'] == 1:
+                review1['isDomestic'] = 'Trong nước'
+            elif review1['isDomestic'] == 0:
+                review1['isDomestic'] = 'Quốc tế'
 
         if review1['bidMode'] is None:
             review1['bidMode'] = 0
+        else:
+            if review1['bidMode'] == '1_MTHS':
+                review1['bidMode'] = 'Một giai đoạn một túi hồ sơ'
+            elif review1['bidMode'] == '1_HTHS':
+                review1['bidMode'] = 'Một giai đoạn hai túi hồ sơ'
 
         if review1['isInternet'] is None:
             review1['isInternet'] = 0
+        else:
+            if review1['isInternet'] == 1:
+                review1['isInternet'] = 'Qua mạng'
+            elif review1['isInternet'] == 0:
+                review1['isInternet'] = 'Không qua mạng'
 
         if review1['issueLocation'] is None:
             review1['issueLocation'] = 0
@@ -4815,21 +4858,29 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
             decisionAgency = 0
             link1 = 0
 
+        if review1['notifyVersion'] is None:
+            review1['notifyVersion'] = ''
+
         if review1['id'] is not None:
             link2 = 'https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + review1['id'],
         else:
             link2 = 0
         if review1['bidPrice'] is None:
             review1['bidPrice'] = 0
-
-        details.extend([review1['notifyNo'], review1['publicDate'], review1['planNo'], review1['planType'],
+        lienDanh = LienDanh.liendanh()
+        print(listHangHoa)
+        details.extend([review1['notifyNo'],
+                        review1['publicDate'],
+                        review1["notifyVersion"],  # 2
+                        review1['planNo'],
+                        review1['planType'],
                         review1['planName'],
                         review1['bidName'],
                         review1['investorName'],
                         review1['procuringEntityName'],
                         review1['capitalDetail'],
                         review1['investField'],
-                        review1['bidForm'],
+                        bidForm,
                         v,
                         review1['isDomestic'],
                         review1['bidMode'],
@@ -4844,17 +4895,37 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
                         review1['bidOpenLocation'],
                         str(review1['bidValidityPeriod']) + str(review1['bidValidityPeriodUnit']),
                         review1['guaranteeValue'],
+                        review1['bidPrice'],
                         review1['guaranteeForm'],
                         decisionNo,
                         decisionDate,
                         decisionAgency,
-                        link1, link2,
-                        review1['bidPrice'],
+                        link1,
+                        link2,
                         dem,
                         bien,
                         nhap1,
                         nhap2,
-                        codes])
+                        codes,
+                        decisionCNTTT,
+                        lienDanh,
+                        listHangHoa])
+        bidType = upABN_db.bid_type(details[10])
+        bidMethod = upABN_db.bid_method(details[16])
+        crea_at = upABN_db.timeUpd()
+        tim_close = upABN_db.time_close(details[21])
+        time_post = upABN_db.time_post(details[1])
+        date_app = upABN_db.date_app2(decisionDate)
+        news_id = 0
+
+        if upABN_db.ktTrungDL(review1['notifyNo'], review1["notifyVersion"]) == None:
+            news_id = upABN_db.upDataDB(8, bidType, bidMethod, 1, crea_at, crea_at, review1['notifyNo'],
+                                        review1["notifyVersion"],
+                                        tim_close, time_post, date_app)
+            upABNDetail_db.upData_CNTTT(details, news_id)
+            upABO_result_complete_gd_hsdt.upData(details, news_id, 1)
+            upABRGoods_db.upData_CNTTT(listHangHoa, news_id)
+            print(1)
 
         with open('' + folder_path1 + '/CNTTT.csv', 'a', encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -5141,6 +5212,8 @@ def CrawDetail_DT_CNTTT_2(inputResultId, session1, folder_path1, nhap2):
                     else:
                         if review3['bideContractorInputResultDTO']['lotResultDTO'][0]['contractorList'] is None:
                             return
+        if review3['bideContractorInputResultDTO']['decisionDate'] is  None:
+            review3['bideContractorInputResultDTO']['decisionDate'] =''
 
         for nhathau in review3['bideContractorInputResultDTO']['lotResultDTO'][0]['contractorList']:
             if nhathau['orgCode'] is None:
@@ -5169,7 +5242,10 @@ def CrawDetail_DT_CNTTT_2(inputResultId, session1, folder_path1, nhap2):
                     [nhathau['orgCode'], nhathau['orgFullname'], nhathau['lotFinalPrice'], nhathau['bidWiningPrice'],
                      str(nhathau['cperiod']) + nhathau['cperiodUnit']])
 
-        return nhap2
+
+
+        print(review3)
+        return nhap2,  review3['bideContractorInputResultDTO']['decisionDate'], crawlDetail_HangHoa_CNTTT(review3)
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
         f = open('' + folder_path1 + "/log.txt", "a")
@@ -5722,830 +5798,897 @@ def CrawlDetail_DT_DHT(code, details, session1, codes, folder_path1):
     return
 
 
-def CrawlDetail_DT_KCNTTT(code, details, session1, codes, folder_path1, code1, code2):
-    cookies = {
-        'COOKIE_SUPPORT': 'true',
-        'GUEST_LANGUAGE_ID': 'vi_VN',
-        '_ga': 'GA1.1.2001033887.1675655198',
-        'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
-        '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
-        '5321a273c51a75133e0fb1cd75e32e27': 'ade5164d2e0fd8c83bfac03e189c2b3a',
-        '_ga_19996Z37EE': 'deleted',
-        '_ga_19996Z37EE': 'deleted',
-        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2245525d5f4f58455e445a4a4217de',
-        'JSESSIONID': 'P8qD1trpOCbKugcHzLUSfc-EJmmDFcU45yMx_Oyr.dc_app1_02',
-        'LFR_SESSION_STATE_20103': '1677295548357',
-        '_ga_19996Z37EE': 'GS1.1.1677292879.41.1.1677295564.0.0.0',
-        'citrix_ns_id': 'AAE7TXX5YztZ3bkAAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==XIP5Yw==yAwzuDLaKsNxiKG6oLupFM7gZGE=',
-    }
-
-    headers = {
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Content-Type': 'application/json',
-        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; 5321a273c51a75133e0fb1cd75e32e27=ade5164d2e0fd8c83bfac03e189c2b3a; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2245525d5f4f58455e445a4a4217de; JSESSIONID=P8qD1trpOCbKugcHzLUSfc-EJmmDFcU45yMx_Oyr.dc_app1_02; LFR_SESSION_STATE_20103=1677295548357; _ga_19996Z37EE=GS1.1.1677292879.41.1.1677295564.0.0.0; citrix_ns_id=AAE7TXX5YztZ3bkAAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==XIP5Yw==yAwzuDLaKsNxiKG6oLupFM7gZGE=',
-        'Origin': 'https://muasamcong.mpi.gov.vn',
-        'Pragma': 'no-cache',
-        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-4-kqlcnt&id=IB2300026250&notifyId=IB2300026250&inputResultId=b8b48175-5c43-44b2-8590-2ca48a15db5f&bidOpenId=undefined&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=undefined&notifyNo=IB2300026250&planNo=undefined&pno=undefined',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 OPR/95.0.0.0',
-        'sec-ch-ua': '"Opera GX";v="95", "Chromium";v="109", "Not;A=Brand";v="24"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-    }
-
-    try:
-        dem = 0
-        nhap1 = [0]
-        nhap1.clear()
-        bien = 0
-        nhap1, bien, dem = CrawDetail_DT_KCNTTT_1(notifyNo=code1, session1=session1, folder_path1=folder_path1, dem=dem)
-
-        nhap2 = [0]
-        nhap2.clear()
-        nhap2 = CrawDetail_DT_KCNTTT_2(inputResultId=code2, session1=session1, folder_path1=folder_path1, nhap2=nhap2)
-        # Request theo id trong list_TBMT_CDT de lay cac thong tin cho vao CT_TBMT_CDT
-        i = random.randrange(1,10)
-        time.sleep(i)
-        session = session1
-        data = '{"id":"' + code + '"}'
-        response = session.post(
-            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/lcnt/bid-po-bido-notify-contractor-view/get-by-id',
-            cookies=cookies,
-            headers=headers,
-            data=data,
-            allow_redirects=False,
-            verify=False,
-            timeout=30,
-        )
-
-        json_data1 = response.json()
-        if json_data1 is not None:
-            data = json.dumps(json_data1)
-            if data.find('bidoNotifyContractorP') != -1:
-                if json_data1['bidoNotifyContractorP'] is not None:
-                    review1 = json_data1['bidoNotifyContractorP']
-                    if review1['cPeriod'] is None:
-                        review1['cPeriod'] = 0
-                    if review1['cPeriodUnit'] is None:
-                        review1['cPeriodUnit'] = 0
-                    a = str(review1['cPeriod']) + str(review1['cPeriodUnit'])
-                    if review1['cType'] is not None:
-                        v = review1['cType']
-                    else:
-                        v = 0
-
-            elif data.find('bidoNotifyContractorM') != -1:
-                if json_data1['bidoNotifyContractorM'] is not None:
-                    review1 = json_data1['bidoNotifyContractorM']
-                    if review1['contractPeriod'] is None:
-                        review1['contractPeriod'] = 0
-                    if review1['contractPeriodUnit'] is None:
-                        review1['contractPeriodUnit'] = 0
-                    a = str(review1['contractPeriod']) + str(review1['contractPeriodUnit'])
-                    if review1['contractType'] is not None:
-                        v = review1['contractType']
-                    else:
-                        v = 0
-
-        if data.find('bidpBidLocationList') != -1:
-            if json_data1['bidpBidLocationList'] is None:
-                b = 0
-            else:
-                if json_data1['bidpBidLocationList'][0] is not None:
-                    if json_data1['bidpBidLocationList'][0]['districtName'] is None:
-                        b = json_data1['bidpBidLocationList'][0]['provName']
-                    elif json_data1['bidpBidLocationList'][0]['provName'] is None:
-                        b = json_data1['bidpBidLocationList'][0]['districtName']
-                    else:
-                        b = json_data1['bidpBidLocationList'][0]['districtName'] + ", " + \
-                            json_data1['bidpBidLocationList'][0]['provName']
-
-        elif data.find('lsBidpBidLocationDTO') != -1:
-            if json_data1['lsBidpBidLocationDTO'] is None:
-                b = 0
-            else:
-                if json_data1['lsBidpBidLocationDTO'][0] is not None:
-                    if json_data1['lsBidpBidLocationDTO'][0]['districtName'] is None:
-                        b = json_data1['lsBidpBidLocationDTO'][0]['provName']
-                    elif json_data1['lsBidpBidLocationDTO'][0]['provName'] is None:
-                        b = json_data1['lsBidpBidLocationDTO'][0]['districtName']
-                    else:
-                        b = json_data1['lsBidpBidLocationDTO'][0]['districtName'] + ", " + \
-                            json_data1['lsBidpBidLocationDTO'][0]['provName']
-
-        if review1['isInternet'] is None:
-            review1['isInternet'] = 0
-            fee = ''
-        else:
-            if review1['isInternet'] == 1:
-                if review1['bidForm'] == 'DTRR' or review1['bidForm'] == 'DTHC' or review1['bidForm'] == 'MSTT':
-                    fee = '330,000 VND'
-                elif review1['bidForm'] == 'CHCT' or review1['bidForm'] == 'CHCTRG':
-                    fee = '220,000 VND'
-            elif review1['isInternet'] == 0:
-                if review1['feeValue'] is None:
-                    fee = 'Miễn phí'
-                else:
-                    fee = review1['feeValue']
-
-        if review1['notifyNo'] is None:
-            review1['notifyNo'] = 0
-
-        if review1['publicDate'] is None:
-            review1['publicDate'] = 0
-
-        if review1['planNo'] is None:
-            review1['planNo'] = 0
-
-        if review1['planType'] is None:
-            review1['planType'] = 0
-
-        if review1['planName'] is None:
-            review1['planName'] = 0
-
-        if review1['bidName'] is None:
-            review1['bidName'] = 0
-
-        if review1['investorName'] is None:
-            review1['investorName'] = 0
-
-        if review1['procuringEntityName'] is None:
-            review1['procuringEntityName'] = 0
-
-        if review1['capitalDetail'] is None:
-            review1['capitalDetail'] = 0
-
-        if review1['bidForm'] is None:
-            review1['bidForm'] = 0
-
-        if review1['isDomestic'] is None:
-            review1['isDomestic'] = 0
-
-        if review1['bidMode'] is None:
-            review1['bidMode'] = 0
-
-        if review1['isInternet'] is None:
-            review1['isInternet'] = 0
-
-        if review1['issueLocation'] is None:
-            review1['issueLocation'] = 0
-
-        if review1['receiveLocation'] is None:
-            review1['receiveLocation'] = 0
-
-        if review1['bidCloseDate'] is None:
-            review1['bidCloseDate'] = 0
-
-        if review1['bidOpenDate'] is None:
-            review1['bidOpenDate'] = 0
-
-        if review1['bidOpenLocation'] is None:
-            review1['bidOpenLocation'] = 0
-
-        if review1['bidValidityPeriod'] is None:
-            review1['bidValidityPeriod'] = 0
-
-        if review1['bidValidityPeriodUnit'] is None:
-            review1['bidValidityPeriodUnit'] = 0
-
-        if review1['guaranteeValue'] is None:
-            review1['guaranteeValue'] = 0
-
-        if review1['guaranteeForm'] is None:
-            review1['guaranteeForm'] = 0
-
-        if json_data1['bidInvContractorOfflineDTO'] is not None:
-            if json_data1['bidInvContractorOfflineDTO']['decisionNo'] is None:
-                decisionNo = 0
-            else:
-                decisionNo = json_data1['bidInvContractorOfflineDTO']['decisionNo']
-
-            if json_data1['bidInvContractorOfflineDTO']['decisionDate'] is None:
-                decisionDate = 0
-            else:
-                decisionDate = json_data1['bidInvContractorOfflineDTO']['decisionDate']
-
-            if json_data1['bidInvContractorOfflineDTO']['decisionAgency'] is None:
-                decisionAgency = 0
-            else:
-                decisionAgency = json_data1['bidInvContractorOfflineDTO']['decisionAgency']
-
-            if json_data1['bidInvContractorOfflineDTO']['decisionFileId'] is not None:
-                link1 = 'http://localhost:1234/api/download/file/browser/public?fileId=' + \
-                        json_data1['bidInvContractorOfflineDTO']['decisionFileId'],
-            else:
-                link1 = 0
-        else:
-            decisionNo = 0
-            decisionDate = 0
-            decisionAgency = 0
-            link1 = 0
-
-        if review1['id'] is not None:
-            link2 = 'https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + review1['id'],
-        else:
-            link2 = 0
-        if review1['bidPrice'] is None:
-            review1['bidPrice'] = 0
-
-        details.extend([review1['notifyNo'], review1['publicDate'], review1['planNo'], review1['planType'],
-                        review1['planName'],
-                        review1['bidName'],
-                        review1['investorName'],
-                        review1['procuringEntityName'],
-                        review1['capitalDetail'],
-                        review1['investField'],
-                        review1['bidForm'],
-                        v,
-                        review1['isDomestic'],
-                        review1['bidMode'],
-                        a,
-                        review1['isInternet'],
-                        review1['issueLocation'],
-                        fee,
-                        review1['receiveLocation'],
-                        b,
-                        review1['bidCloseDate'],
-                        review1['bidOpenDate'],
-                        review1['bidOpenLocation'],
-                        str(review1['bidValidityPeriod']) + str(review1['bidValidityPeriodUnit']),
-                        review1['guaranteeValue'],
-                        review1['guaranteeForm'],
-                        decisionNo,
-                        decisionDate,
-                        decisionAgency,
-                        link1, link2,
-                        review1['bidPrice'],
-                        dem,
-                        bien,
-                        nhap1,
-                        nhap2,
-                        codes])
-        with open('' + folder_path1 + '/CNTTT.csv', 'a', encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(details)
-        details.clear()
-
-
-    except requests.ReadTimeout as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(code)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except requests.exceptions.ConnectionError:
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(code)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except requests.Timeout as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(code)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except Exception as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(code)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-    return
-
-
-def CrawDetail_DT_KCNTTT_KQM(inputResultId, details, session1, codes, folder_path1):
-    cookies = {
-        'COOKIE_SUPPORT': 'true',
-        'GUEST_LANGUAGE_ID': 'vi_VN',
-        '_ga': 'GA1.1.2001033887.1675655198',
-        'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
-        '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
-        '5321a273c51a75133e0fb1cd75e32e27': 'ade5164d2e0fd8c83bfac03e189c2b3a',
-        '_ga_19996Z37EE': 'deleted',
-        '_ga_19996Z37EE': 'deleted',
-        'JSESSIONID': 'EjKa8X-ItOKYz3qrc56vTR8hRaJnyjC3AtCO45_o.dc_app1_01',
-        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2345525d5f4f58455e445a4a4217de',
-        'LFR_SESSION_STATE_20103': '1677296447665',
-        '_ga_19996Z37EE': 'GS1.1.1677292879.41.1.1677296463.0.0.0',
-        'citrix_ns_id': 'AAE7TXX5YztZ3bkAAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==3ob5Yw==lBkRIhhcwjXAP8AyH8OfnzTA8ow=',
-    }
-
-    headers = {
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Content-Type': 'application/json',
-        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; 5321a273c51a75133e0fb1cd75e32e27=ade5164d2e0fd8c83bfac03e189c2b3a; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; JSESSIONID=EjKa8X-ItOKYz3qrc56vTR8hRaJnyjC3AtCO45_o.dc_app1_01; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2345525d5f4f58455e445a4a4217de; LFR_SESSION_STATE_20103=1677296447665; _ga_19996Z37EE=GS1.1.1677292879.41.1.1677296463.0.0.0; citrix_ns_id=AAE7TXX5YztZ3bkAAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==3ob5Yw==lBkRIhhcwjXAP8AyH8OfnzTA8ow=',
-        'Origin': 'https://muasamcong.mpi.gov.vn',
-        'Pragma': 'no-cache',
-        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-4-kqlcnt&id=IB2300024175&notifyId=IB2300024175&inputResultId=2aad6a2a-cff4-43a8-8a8e-93c576c05867&bidOpenId=undefined&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=undefined&notifyNo=IB2300024175&planNo=undefined&pno=undefined',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 OPR/95.0.0.0',
-        'sec-ch-ua': '"Opera GX";v="95", "Chromium";v="109", "Not;A=Brand";v="24"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-    }
-    try:
-        i = random.randrange(1,10)
-        time.sleep(i)
-        session = session1
-        data = '{"id":"' + inputResultId + '"}'
-        response = session.post(
-            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/contractor-input-result/get',
-            cookies=cookies,
-            headers=headers,
-            data=data,
-            allow_redirects=False,
-            verify=False,
-            timeout=30,
-        )
-        json_data1 = response.json()
-        if json_data1 is None:
-            return
-        else:
-            if json_data1['bideContractorInputResultDTO'] is not None:
-                review1 = json_data1['bideContractorInputResultDTO']
-            if json_data1['bidpPlanDetailDTO'] is not None:
-                review2 = json_data1['bidpPlanDetailDTO']
-
-        if review1['notifyNo'] is None:
-            review1['notifyNo'] = 0
-
-        if review1['publicDate'] is None:
-            review1['publicDate'] = 0
-
-        if review1['investorName'] is None:
-            review1['investorName'] = 0
-
-        if review2['planNo'] is None:
-            review2['planNo'] = 0
-
-        if review1['bidName'] is None:
-            review1['bidName'] = 0
-
-        if review1['bidEstimatePrice'] is None:
-            review1['bidEstimatePrice'] = 0
-
-        if review1['bidPrice'] is None:
-            review1['bidPrice'] = 0
-
-        if review1['ctype'] is None:
-            review1['ctype'] = 0
-
-        if review1['bidForm'] is None:
-            review1['bidForm'] = 0
-
-        if review1['bidMode'] is None:
-            review1['bidMode'] = 0
-
-        if review1['bidField'] is None:
-            review1['bidField'] = 0
-
-        if review1['decisionDate'] is None:
-            review1['decisionDate'] = 0
-
-        if review1['decisionAgency'] is None:
-            review1['decisionAgency'] = 0
-
-        if review1['decisionNo'] is None:
-            review1['decisionNo'] = 0
-
-        if review1['reportFileId'] is None:
-            link1 = 0
-        else:
-            link1 = 'http://localhost:1234/api/download/file/browser/public?fileId=' + review1['reportFileId']
-
-        if review1['isDomestic'] is None:
-            review1['isDomestic'] = ''
-        else:
-            if review1['isDomestic'] == 1 or review1['isDomestic'] == True:
-                review1['isDomestic'] = 'Trong nước'
-            else:
-                review1['isDomestic'] = 'Quốc tế'
-
-        nhap = [0]
-        nhap.clear()
-        if review1['lotResultDTO'] is not None:
-            if review1['lotResultDTO'][0] is not None:
-                if review1['lotResultDTO'][0]['contractorList'] is not None:
-                    for nhathau in review1['lotResultDTO'][0]['contractorList']:
-                        if nhathau['bidResult'] == 1:
-                            if nhathau['orgCode'] is None:
-                                nhathau['orgCode'] = 0
-
-                            if nhathau['orgFullname'] is None:
-                                nhathau['orgFullname'] = 0
-
-                            if nhathau['bidWiningPrice'] is None:
-                                nhathau['bidWiningPrice'] = 0
-
-                                nhap.append([nhathau['orgCode'], nhathau['orgFullname'], nhathau['bidWiningPrice']])
-
-        details.extend(
-            [review1['notifyNo'], review1['publicDate'], review1['investorName'], review2['planNo'], review1['bidName'],
-             review1['bidEstimatePrice'], review1['bidPrice'], review1['ctype'], review1['bidForm'], review1['bidMode'],
-             review1['bidField'], review1['decisionDate'], review1['decisionAgency'], review1['decisionNo'], link1,
-             review1['isDomestic'], nhap, codes])
-        with open('' + folder_path1 + '/CNTTT_KQM.csv', 'a', encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(details)
-        details.clear()
-
-
-    except requests.ReadTimeout as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(inputResultId)
-        f.write("Ho so CNTTT KQM bi loi khong lay duoc du lieu: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except requests.exceptions.ConnectionError:
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(inputResultId)
-        f.write("Ho so CNTTT KQM bi loi khong lay duoc du lieu: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except requests.Timeout as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(inputResultId)
-        f.write("Ho so CNTTT KQM bi loi khong lay duoc du lieu: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except Exception as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(inputResultId)
-        f.write("Ho so CNTTT KQM bi loi khong lay duoc du lieu: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-    return
-
-
-def CrawDetail_DT_KCNTTT_1(notifyNo, session1, folder_path1, dem):
-    cookies2 = {
-        'COOKIE_SUPPORT': 'true',
-        'GUEST_LANGUAGE_ID': 'vi_VN',
-        '_ga': 'GA1.1.2001033887.1675655198',
-        'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
-        '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
-        '5321a273c51a75133e0fb1cd75e32e27': 'ade5164d2e0fd8c83bfac03e189c2b3a',
-        '_ga_19996Z37EE': 'deleted',
-        '_ga_19996Z37EE': 'deleted',
-        'JSESSIONID': '2M0FtYPE249N-JxE30p-BxDAclmuUln5yBJKNNIQ.dc_app1_01',
-        'LFR_SESSION_STATE_20103': '1676788514796',
-        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2345525d5f4f58455e445a4a4217de',
-        '_ga_19996Z37EE': 'GS1.1.1676788070.5.1.1676789211.0.0.0',
-        'citrix_ns_id': 'AAE7ar_xYzvrK64AAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==YsnxYw==x_2EGEljGY2abWHfUM_y5bDiYlY=',
-    }
-
-    headers2 = {
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Content-Type': 'application/json',
-        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; 5321a273c51a75133e0fb1cd75e32e27=ade5164d2e0fd8c83bfac03e189c2b3a; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; JSESSIONID=2M0FtYPE249N-JxE30p-BxDAclmuUln5yBJKNNIQ.dc_app1_01; LFR_SESSION_STATE_20103=1676788514796; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2345525d5f4f58455e445a4a4217de; _ga_19996Z37EE=GS1.1.1676788070.5.1.1676789211.0.0.0; citrix_ns_id=AAE7ar_xYzvrK64AAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==YsnxYw==x_2EGEljGY2abWHfUM_y5bDiYlY=',
-        'Origin': 'https://muasamcong.mpi.gov.vn',
-        'Pragma': 'no-cache',
-        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-4-kqlcnt&id=8051e056-f3b3-4318-bf09-baa91ee3d95d&notifyId=8051e056-f3b3-4318-bf09-baa91ee3d95d&inputResultId=eaf045bc-91fe-4e5d-a02e-fea93bb1bb90&bidOpenId=eafe7066-9c56-4db7-a642-42e7c4674d11&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=1_MTHS&notifyNo=IB2300018722&planNo=PL2300014693&pno=undefined',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 OPR/94.0.0.0',
-        'sec-ch-ua': '"Chromium";v="108", "Opera GX";v="94", "Not)A;Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-    }
-    try:
-        i = random.randrange(1,10)
-        time.sleep(i)
-        session = session1
-        data2 = '{"notifyNo":"' + notifyNo + '","type":"TBMT","packType":0}'
-        response2 = session.post(
-            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/ldtkqmt/bid-notification-p/get-by-id',
-            cookies=cookies2,
-            headers=headers2,
-            data=data2,
-            allow_redirects=False,
-            verify=False,
-            timeout=30,
-        )
-
-        json_data2 = response2.json()
-        review2 = json_data2
-        nhap1 = [0]
-        nhap1.clear()
-        if review2 is None:
-            return 0, 0, 0
-        else:
-            if review2['bidSubmissionByContractorViewResponse'] is None:
-                return 0, 0, 0
-            else:
-                if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is None:
-                    return 0, 0, 0
-                if review2['bidoBidroundMngViewDTO']['successBidOpenDate'] is None:
-                    review2['bidoBidroundMngViewDTO']['successBidOpenDate'] = 0
-
-        for nhathau in review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList']:
-            if nhathau['contractorCode'] is None:
-                nhathau['contractorCode'] = 0
-
-            if nhathau['contractorName'] is None:
-                nhathau['contractorName'] = 0
-
-            if nhathau['bidPrice'] is None:
-                nhathau['bidPrice'] = 0
-
-            if nhathau['alternativeTech'] is None:
-                nhathau['alternativeTech'] = 0
-
-            if nhathau['bidFinalPrice'] is None:
-                nhathau['bidFinalPrice'] = 0
-
-            if nhathau['bidValidityNum'] is None:
-                nhathau['bidValidityNum'] = 0
-
-            if nhathau['bidGuarantee'] is None:
-                nhathau['bidGuarantee'] = 0
-
-            if nhathau['bidGuaranteeValidity'] is None:
-                nhathau['bidGuaranteeValidity'] = 0
-
-            if nhathau['contractPeriodDT'] is None:
-                nhathau['contractPeriodDT'] = 0
-
-            if nhathau['contractPeriodDTUnit'] is None:
-                nhathau['contractPeriodDTUnit'] = 0
-
-            nhap1.append(
-                [nhathau['contractorCode'], nhathau['contractorName'], nhathau['bidPrice'], nhathau['alternativeTech'],
-                 nhathau['bidFinalPrice'], nhathau['bidValidityNum'], nhathau['bidGuarantee'],
-                 nhathau['bidGuaranteeValidity'],
-                 str(nhathau['contractPeriodDT']) + str(nhathau['contractPeriodDTUnit'])])
-            dem = dem + 1
-
-        return nhap1, review2['bidoBidroundMngViewDTO']['successBidOpenDate'], dem
-
-
-    except requests.ReadTimeout as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(notifyNo)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 3: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except requests.exceptions.ConnectionError:
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(notifyNo)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 3: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except requests.Timeout as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(notifyNo)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 3: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except Exception as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(notifyNo)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 3: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-
-def CrawDetail_DT_KCNTTT_2(inputResultId, session1, folder_path1, nhap2):
-    cookies3 = {
-        'COOKIE_SUPPORT': 'true',
-        'GUEST_LANGUAGE_ID': 'vi_VN',
-        '_ga': 'GA1.1.2001033887.1675655198',
-        'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
-        '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
-        '5321a273c51a75133e0fb1cd75e32e27': 'ade5164d2e0fd8c83bfac03e189c2b3a',
-        '_ga_19996Z37EE': 'deleted',
-        '_ga_19996Z37EE': 'deleted',
-        'LFR_SESSION_STATE_20103': '1677299771614',
-        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2245525d5f4f58455e445a4a4217de',
-        'JSESSIONID': 'j32Jyt6aLSDjzUCPbJ54aLZszP5dzJwMXAj-_n7i.dc_app1_02',
-        '_ga_19996Z37EE': 'GS1.1.1677302324.43.1.1677302340.0.0.0',
-        'citrix_ns_id': 'AAQ7MZr5YzucIbwAAAAAADuFeyfrzB16Q6f2O8qetWxEjgrmsRagqTk7pAb08kWUOw==y535Yw==exYEMKTSv390EFm78JcEbK4CM14=',
-    }
-
-    headers3 = {
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Content-Type': 'application/json',
-        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; 5321a273c51a75133e0fb1cd75e32e27=ade5164d2e0fd8c83bfac03e189c2b3a; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; LFR_SESSION_STATE_20103=1677299771614; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2245525d5f4f58455e445a4a4217de; JSESSIONID=j32Jyt6aLSDjzUCPbJ54aLZszP5dzJwMXAj-_n7i.dc_app1_02; _ga_19996Z37EE=GS1.1.1677302324.43.1.1677302340.0.0.0; citrix_ns_id=AAQ7MZr5YzucIbwAAAAAADuFeyfrzB16Q6f2O8qetWxEjgrmsRagqTk7pAb08kWUOw==y535Yw==exYEMKTSv390EFm78JcEbK4CM14=',
-        'Origin': 'https://muasamcong.mpi.gov.vn',
-        'Pragma': 'no-cache',
-        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-4-kqlcnt&id=aca05bb6-40b7-43a7-b4f8-9fcb5ddb9097&notifyId=aca05bb6-40b7-43a7-b4f8-9fcb5ddb9097&inputResultId=a313cf55-5bc5-4003-9cb4-8fde3e4dc2ad&bidOpenId=00e4e371-cb82-4d7a-8cca-b432cceb9580&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=1_MTHS&notifyNo=IB2300023119&planNo=PL2300018300&pno=undefined',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 OPR/95.0.0.0',
-        'sec-ch-ua': '"Opera GX";v="95", "Chromium";v="109", "Not;A=Brand";v="24"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-    }
-    try:
-        i = random.randrange(1,10)
-        time.sleep(i)
-        session = session1
-        data3 = '{"id":"' + inputResultId + '"}'
-        response3 = session.post(
-            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/contractor-input-result/get',
-            cookies=cookies3,
-            headers=headers3,
-            data=data3,
-            allow_redirects=False,
-            verify=False,
-            timeout=30,
-        )
-
-        json_data3 = response3.json()
-        review3 = json_data3
-        nhap2 = [0]
-        nhap2.clear()
-        if review3 is None:
-            return
-        else:
-            if review3['bideContractorInputResultDTO'] is None:
-                return
-            else:
-                if review3['bideContractorInputResultDTO']['lotResultDTO'] is None:
-                    return
-                else:
-                    if review3['bideContractorInputResultDTO']['lotResultDTO'][0] is None:
-                        return
-                    else:
-                        if review3['bideContractorInputResultDTO']['lotResultDTO'][0]['contractorList'] is None:
-                            return
-
-        for nhathau in review3['bideContractorInputResultDTO']['lotResultDTO'][0]['contractorList']:
-            if nhathau['orgCode'] is None:
-                nhathau['orgCode'] = 0
-
-            if nhathau['orgFullname'] is None:
-                nhathau['orgCode'] = 0
-
-            if nhathau['lotFinalPrice'] is None:
-                nhathau['orgCode'] = 0
-
-            if nhathau['bidWiningPrice'] is None:
-                nhathau['orgCode'] = 0
-
-            if nhathau['cperiod'] is None:
-                nhathau['orgCode'] = 0
-
-            if nhathau['cperiodUnit'] is None:
-                nhathau['orgCode'] = 0
-
-            if nhathau['bidResult'] is None:
-                nhap2.append([nhathau['orgCode'], nhathau['orgFullname'], nhathau['reason'], 0, 0])
-
-            elif nhathau['bidResult'] == 1:
-                nhap2.append(
-                    [nhathau['orgCode'], nhathau['orgFullname'], nhathau['lotFinalPrice'], nhathau['bidWiningPrice'],
-                     str(nhathau['cperiod']) + nhathau['cperiodUnit']])
-
-        return nhap2
-    except requests.ReadTimeout as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(inputResultId)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 2: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except requests.exceptions.ConnectionError:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(inputResultId)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 2: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except requests.Timeout as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(inputResultId)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 2: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
-
-    except Exception as err:
-        print(f"{type(err).__name__} was raised: {err}")
-        f = open('' + folder_path1 + "/log.txt", "a")
-        h = "{}".format(inputResultId)
-        f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 2: " + h)
-        f.write('\n')
-        f.close()
-        i = random.randrange(1, 10)
-        time.sleep(i)
-        session1.close()
-        session1 = requests.Session()
-        pass
+# def CrawlDetail_DT_KCNTTT(code, details, session1, codes, folder_path1, code1, code2):
+#     cookies = {
+#         'COOKIE_SUPPORT': 'true',
+#         'GUEST_LANGUAGE_ID': 'vi_VN',
+#         '_ga': 'GA1.1.2001033887.1675655198',
+#         'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
+#         '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
+#         '5321a273c51a75133e0fb1cd75e32e27': 'ade5164d2e0fd8c83bfac03e189c2b3a',
+#         '_ga_19996Z37EE': 'deleted',
+#         '_ga_19996Z37EE': 'deleted',
+#         'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2245525d5f4f58455e445a4a4217de',
+#         'JSESSIONID': 'P8qD1trpOCbKugcHzLUSfc-EJmmDFcU45yMx_Oyr.dc_app1_02',
+#         'LFR_SESSION_STATE_20103': '1677295548357',
+#         '_ga_19996Z37EE': 'GS1.1.1677292879.41.1.1677295564.0.0.0',
+#         'citrix_ns_id': 'AAE7TXX5YztZ3bkAAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==XIP5Yw==yAwzuDLaKsNxiKG6oLupFM7gZGE=',
+#     }
+#
+#     headers = {
+#         'Accept': 'application/json, text/plain, */*',
+#         'Accept-Language': 'en-US,en;q=0.9',
+#         'Cache-Control': 'no-cache',
+#         'Connection': 'keep-alive',
+#         'Content-Type': 'application/json',
+#         # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; 5321a273c51a75133e0fb1cd75e32e27=ade5164d2e0fd8c83bfac03e189c2b3a; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2245525d5f4f58455e445a4a4217de; JSESSIONID=P8qD1trpOCbKugcHzLUSfc-EJmmDFcU45yMx_Oyr.dc_app1_02; LFR_SESSION_STATE_20103=1677295548357; _ga_19996Z37EE=GS1.1.1677292879.41.1.1677295564.0.0.0; citrix_ns_id=AAE7TXX5YztZ3bkAAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==XIP5Yw==yAwzuDLaKsNxiKG6oLupFM7gZGE=',
+#         'Origin': 'https://muasamcong.mpi.gov.vn',
+#         'Pragma': 'no-cache',
+#         'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-4-kqlcnt&id=IB2300026250&notifyId=IB2300026250&inputResultId=b8b48175-5c43-44b2-8590-2ca48a15db5f&bidOpenId=undefined&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=undefined&notifyNo=IB2300026250&planNo=undefined&pno=undefined',
+#         'Sec-Fetch-Dest': 'empty',
+#         'Sec-Fetch-Mode': 'cors',
+#         'Sec-Fetch-Site': 'same-origin',
+#         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 OPR/95.0.0.0',
+#         'sec-ch-ua': '"Opera GX";v="95", "Chromium";v="109", "Not;A=Brand";v="24"',
+#         'sec-ch-ua-mobile': '?0',
+#         'sec-ch-ua-platform': '"Windows"',
+#     }
+#
+#     try:
+#         dem = 0
+#         nhap1 = [0]
+#         nhap1.clear()
+#         bien = 0
+#         nhap1, bien, dem = CrawDetail_DT_KCNTTT_1(notifyNo=code1, session1=session1, folder_path1=folder_path1, dem=dem)
+#
+#         nhap2 = [0]
+#         nhap2.clear()
+#         nhap2 = CrawDetail_DT_KCNTTT_2(inputResultId=code2, session1=session1, folder_path1=folder_path1, nhap2=nhap2)
+#         # Request theo id trong list_TBMT_CDT de lay cac thong tin cho vao CT_TBMT_CDT
+#         i = random.randrange(1,10)
+#         time.sleep(i)
+#         session = session1
+#         data = '{"id":"' + code + '"}'
+#         response = session.post(
+#             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/lcnt/bid-po-bido-notify-contractor-view/get-by-id',
+#             cookies=cookies,
+#             headers=headers,
+#             data=data,
+#             allow_redirects=False,
+#             verify=False,
+#             timeout=30,
+#         )
+#
+#         json_data1 = response.json()
+#         if json_data1 is not None:
+#             data = json.dumps(json_data1)
+#             if data.find('bidoNotifyContractorP') != -1:
+#                 if json_data1['bidoNotifyContractorP'] is not None:
+#                     review1 = json_data1['bidoNotifyContractorP']
+#                     if review1['cPeriod'] is None:
+#                         review1['cPeriod'] = 0
+#                     if review1['cPeriodUnit'] is None:
+#                         review1['cPeriodUnit'] = 0
+#                     a = str(review1['cPeriod']) + str(review1['cPeriodUnit'])
+#                     if review1['cType'] is not None:
+#                         v = review1['cType']
+#                     else:
+#                         v = 0
+#
+#             elif data.find('bidoNotifyContractorM') != -1:
+#                 if json_data1['bidoNotifyContractorM'] is not None:
+#                     review1 = json_data1['bidoNotifyContractorM']
+#                     if review1['contractPeriod'] is None:
+#                         review1['contractPeriod'] = 0
+#                     if review1['contractPeriodUnit'] is None:
+#                         review1['contractPeriodUnit'] = 0
+#                     a = str(review1['contractPeriod']) + str(review1['contractPeriodUnit'])
+#                     if review1['contractType'] is not None:
+#                         v = review1['contractType']
+#                     else:
+#                         v = 0
+#
+#         if data.find('bidpBidLocationList') != -1:
+#             if json_data1['bidpBidLocationList'] is None:
+#                 b = 0
+#             else:
+#                 if json_data1['bidpBidLocationList'][0] is not None:
+#                     if json_data1['bidpBidLocationList'][0]['districtName'] is None:
+#                         b = json_data1['bidpBidLocationList'][0]['provName']
+#                     elif json_data1['bidpBidLocationList'][0]['provName'] is None:
+#                         b = json_data1['bidpBidLocationList'][0]['districtName']
+#                     else:
+#                         b = json_data1['bidpBidLocationList'][0]['districtName'] + ", " + \
+#                             json_data1['bidpBidLocationList'][0]['provName']
+#
+#         elif data.find('lsBidpBidLocationDTO') != -1:
+#             if json_data1['lsBidpBidLocationDTO'] is None:
+#                 b = 0
+#             else:
+#                 if json_data1['lsBidpBidLocationDTO'][0] is not None:
+#                     if json_data1['lsBidpBidLocationDTO'][0]['districtName'] is None:
+#                         b = json_data1['lsBidpBidLocationDTO'][0]['provName']
+#                     elif json_data1['lsBidpBidLocationDTO'][0]['provName'] is None:
+#                         b = json_data1['lsBidpBidLocationDTO'][0]['districtName']
+#                     else:
+#                         b = json_data1['lsBidpBidLocationDTO'][0]['districtName'] + ", " + \
+#                             json_data1['lsBidpBidLocationDTO'][0]['provName']
+#
+#         if review1['isInternet'] is None:
+#             review1['isInternet'] = 0
+#             fee = ''
+#         else:
+#             if review1['isInternet'] == 1:
+#                 if review1['bidForm'] == 'DTRR' or review1['bidForm'] == 'DTHC' or review1['bidForm'] == 'MSTT':
+#                     fee = '330,000 VND'
+#                 elif review1['bidForm'] == 'CHCT' or review1['bidForm'] == 'CHCTRG':
+#                     fee = '220,000 VND'
+#             elif review1['isInternet'] == 0:
+#                 if review1['feeValue'] is None:
+#                     fee = 'Miễn phí'
+#                 else:
+#                     fee = review1['feeValue']
+#
+#         if review1['notifyNo'] is None:
+#             review1['notifyNo'] = 0
+#
+#         if review1['publicDate'] is None:
+#             review1['publicDate'] = 0
+#
+#         if review1['planNo'] is None:
+#             review1['planNo'] = 0
+#
+#         if review1['planType'] is None:
+#             review1['planType'] = 0
+#         else:
+#             if review1['planType'] == 'DTPT':
+#                 review1['planType'] = 'Chi đầu tư phát triển'
+#             elif review1['planType'] == 'TX':
+#                 review1['planType'] = 'Chi thường xuyên'
+#
+#
+#         if review1['planName'] is None:
+#             review1['planName'] = 0
+#
+#         if review1['bidName'] is None:
+#             review1['bidName'] = 0
+#
+#         if review1['investorName'] is None:
+#             review1['investorName'] = 0
+#
+#         if review1['procuringEntityName'] is None:
+#             review1['procuringEntityName'] = 0
+#
+#         if review1['capitalDetail'] is None:
+#             review1['capitalDetail'] = 0
+#
+#         if review1['investField'] is None:
+#             review1['investField'] = ''
+#         else:
+#             if review1['investField'] == 'XL':
+#                 review1['investField'] = 'Xây lắp'
+#             elif review1['investField'] == 'TV':
+#                 review1['investField'] = 'Tư vấn'
+#             elif review1['investField'] == 'PTV':
+#                 review1['investField'] = 'Phi tư vấn'
+#             elif review1['investField'] == 'HH':
+#                 review1['investField'] = 'Hàng hóa'
+#
+#         if review1['bidForm'] is None:
+#             review1['bidForm'] = 0
+#         else:
+#             if review1['bidForm'] == 'CHCT':
+#                 review1['bidForm'] = 'Chào hàng cạnh tranh'
+#             if review1['bidForm'] == 'DTRR':
+#                 review1['bidForm'] = 'Đấu thầu rộng rãi'
+#             if review1['bidForm'] == 'CHCTRG':
+#                 review1['bidForm'] = 'Chào hàng cạnh tranh rút gọn'
+#             if review1['bidForm'] == 'CDTRG':
+#                 review1['bidForm'] = 'Chỉ định thầu rút gọn'
+#
+#         if review1['isDomestic'] is None:
+#             review1['isDomestic'] = 0
+#         else:
+#             if review1['isDomestic'] == 1:
+#                 review1['isDomestic'] = 'Trong nước'
+#             elif review1['isDomestic'] == 0:
+#                 review1['isDomestic'] = 'Quốc tế'
+#
+#         if review1['bidMode'] is None:
+#             review1['bidMode'] = 0
+#         else:
+#             if review1['bidMode'] == '1_MTHS':
+#                 review1['bidMode'] = 'Một giai đoạn một túi hồ sơ'
+#             elif review1['bidMode'] == '1_HTHS':
+#                 review1['bidMode'] = 'Một giai đoạn hai túi hồ sơ'
+#
+#         if review1['isInternet'] is None:
+#             review1['isInternet'] = 0
+#         else:
+#             if review1['isInternet'] == 1:
+#                 review1['isInternet'] = 'Qua mạng'
+#             elif review1['isInternet'] == 0:
+#                 review1['isInternet'] = 'Không qua mạng'
+#
+#         if review1['issueLocation'] is None:
+#             review1['issueLocation'] = 0
+#
+#         if review1['receiveLocation'] is None:
+#             review1['receiveLocation'] = 0
+#
+#         if review1['bidCloseDate'] is None:
+#             review1['bidCloseDate'] = 0
+#
+#         if review1['bidOpenDate'] is None:
+#             review1['bidOpenDate'] = 0
+#
+#         if review1['bidOpenLocation'] is None:
+#             review1['bidOpenLocation'] = 0
+#
+#         if review1['bidValidityPeriod'] is None:
+#             review1['bidValidityPeriod'] = 0
+#
+#         if review1['bidValidityPeriodUnit'] is None:
+#             review1['bidValidityPeriodUnit'] = 0
+#
+#         if review1['guaranteeValue'] is None:
+#             review1['guaranteeValue'] = 0
+#
+#         if review1['guaranteeForm'] is None:
+#             review1['guaranteeForm'] = 0
+#
+#         if json_data1['bidInvContractorOfflineDTO'] is not None:
+#             if json_data1['bidInvContractorOfflineDTO']['decisionNo'] is None:
+#                 decisionNo = 0
+#             else:
+#                 decisionNo = json_data1['bidInvContractorOfflineDTO']['decisionNo']
+#
+#             if json_data1['bidInvContractorOfflineDTO']['decisionDate'] is None:
+#                 decisionDate = 0
+#             else:
+#                 decisionDate = json_data1['bidInvContractorOfflineDTO']['decisionDate']
+#
+#             if json_data1['bidInvContractorOfflineDTO']['decisionAgency'] is None:
+#                 decisionAgency = 0
+#             else:
+#                 decisionAgency = json_data1['bidInvContractorOfflineDTO']['decisionAgency']
+#
+#             if json_data1['bidInvContractorOfflineDTO']['decisionFileId'] is not None:
+#                 link1 = 'http://localhost:1234/api/download/file/browser/public?fileId=' + \
+#                         json_data1['bidInvContractorOfflineDTO']['decisionFileId'],
+#             else:
+#                 link1 = 0
+#         else:
+#             decisionNo = 0
+#             decisionDate = 0
+#             decisionAgency = 0
+#             link1 = 0
+#
+#         if review1['id'] is not None:
+#             link2 = 'https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + review1['id'],
+#         else:
+#             link2 = 0
+#         if review1['bidPrice'] is None:
+#             review1['bidPrice'] = 0
+#
+#         if review1["notifyVersion"] is None:
+#             review1["notifyVersion"] = ''
+#
+#         details.extend([review1['notifyNo'],
+#                         review1['publicDate'],
+#                         review1["notifyVersion"],
+#                         review1['planNo'],
+#                         review1['planType'],
+#                         review1['planName'],
+#                         review1['bidName'],
+#                         review1['investorName'],
+#                         review1['procuringEntityName'],
+#                         review1['capitalDetail'],
+#                         review1['investField'],
+#                         review1['bidForm'],
+#                         v,
+#                         review1['isDomestic'],
+#                         review1['bidMode'],
+#                         a,
+#                         review1['isInternet'],
+#                         review1['issueLocation'],
+#                         fee,
+#                         review1['receiveLocation'],
+#                         b,
+#                         review1['bidCloseDate'],
+#                         review1['bidOpenDate'],
+#                         review1['bidOpenLocation'],
+#                         str(review1['bidValidityPeriod']) + str(review1['bidValidityPeriodUnit']),
+#                         review1['guaranteeValue'],
+#                         review1['bidPrice'],
+#                         review1['guaranteeForm'],
+#                         decisionNo,
+#                         decisionDate,
+#                         decisionAgency,
+#                         link1,
+#                         link2,
+#                         dem,
+#                         bien,
+#                         nhap1,
+#                         nhap2,
+#                         codes])
+#         bidType = upABN_db.bid_type(details[10])
+#         bidMethod = upABN_db.bid_method(details[16])
+#         crea_at = upABN_db.timeUpd()
+#         tim_close = upABN_db.time_close(details[21])
+#         time_post = upABN_db.time_post(details[1])
+#         date_app = upABN_db.date_app2(decisionDate)
+#         news_id = 0
+#         print('1111')
+#         if upABN_db.ktTrungDL(review1['notifyNo'], review1["notifyVersion"]) == None:
+#             news_id = upABN_db.upDataDB(8, bidType, bidMethod, 1, crea_at, crea_at, review1['notifyNo'],
+#                                         review1["notifyVersion"],
+#                                         tim_close, time_post, date_app)
+#             print('news_kcnttt')
+#             upABO_result_complete_gd_hsdt.upData(details, news_id, 0)
+#             print(2)
+#
+#
+#         with open('' + folder_path1 + '/CNTTT.csv', 'a', encoding="utf-8") as f:
+#             writer = csv.writer(f)
+#             writer.writerow(details)
+#         details.clear()
+#
+#
+#     except requests.ReadTimeout as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(code)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except requests.exceptions.ConnectionError:
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(code)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except requests.Timeout as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(code)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except Exception as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(code)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#     return
+#
+#
+# def CrawDetail_DT_KCNTTT_KQM(inputResultId, details, session1, codes, folder_path1):
+#     cookies = {
+#         'COOKIE_SUPPORT': 'true',
+#         'GUEST_LANGUAGE_ID': 'vi_VN',
+#         '_ga': 'GA1.1.2001033887.1675655198',
+#         'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
+#         '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
+#         '5321a273c51a75133e0fb1cd75e32e27': 'ade5164d2e0fd8c83bfac03e189c2b3a',
+#         '_ga_19996Z37EE': 'deleted',
+#         '_ga_19996Z37EE': 'deleted',
+#         'JSESSIONID': 'EjKa8X-ItOKYz3qrc56vTR8hRaJnyjC3AtCO45_o.dc_app1_01',
+#         'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2345525d5f4f58455e445a4a4217de',
+#         'LFR_SESSION_STATE_20103': '1677296447665',
+#         '_ga_19996Z37EE': 'GS1.1.1677292879.41.1.1677296463.0.0.0',
+#         'citrix_ns_id': 'AAE7TXX5YztZ3bkAAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==3ob5Yw==lBkRIhhcwjXAP8AyH8OfnzTA8ow=',
+#     }
+#
+#     headers = {
+#         'Accept': 'application/json, text/plain, */*',
+#         'Accept-Language': 'en-US,en;q=0.9',
+#         'Cache-Control': 'no-cache',
+#         'Connection': 'keep-alive',
+#         'Content-Type': 'application/json',
+#         # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; 5321a273c51a75133e0fb1cd75e32e27=ade5164d2e0fd8c83bfac03e189c2b3a; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; JSESSIONID=EjKa8X-ItOKYz3qrc56vTR8hRaJnyjC3AtCO45_o.dc_app1_01; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2345525d5f4f58455e445a4a4217de; LFR_SESSION_STATE_20103=1677296447665; _ga_19996Z37EE=GS1.1.1677292879.41.1.1677296463.0.0.0; citrix_ns_id=AAE7TXX5YztZ3bkAAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==3ob5Yw==lBkRIhhcwjXAP8AyH8OfnzTA8ow=',
+#         'Origin': 'https://muasamcong.mpi.gov.vn',
+#         'Pragma': 'no-cache',
+#         'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-4-kqlcnt&id=IB2300024175&notifyId=IB2300024175&inputResultId=2aad6a2a-cff4-43a8-8a8e-93c576c05867&bidOpenId=undefined&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=undefined&notifyNo=IB2300024175&planNo=undefined&pno=undefined',
+#         'Sec-Fetch-Dest': 'empty',
+#         'Sec-Fetch-Mode': 'cors',
+#         'Sec-Fetch-Site': 'same-origin',
+#         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 OPR/95.0.0.0',
+#         'sec-ch-ua': '"Opera GX";v="95", "Chromium";v="109", "Not;A=Brand";v="24"',
+#         'sec-ch-ua-mobile': '?0',
+#         'sec-ch-ua-platform': '"Windows"',
+#     }
+#     try:
+#         i = random.randrange(1,10)
+#         time.sleep(i)
+#         session = session1
+#         data = '{"id":"' + inputResultId + '"}'
+#         response = session.post(
+#             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/contractor-input-result/get',
+#             cookies=cookies,
+#             headers=headers,
+#             data=data,
+#             allow_redirects=False,
+#             verify=False,
+#             timeout=30,
+#         )
+#         json_data1 = response.json()
+#         if json_data1 is None:
+#             return
+#         else:
+#             if json_data1['bideContractorInputResultDTO'] is not None:
+#                 review1 = json_data1['bideContractorInputResultDTO']
+#             if json_data1['bidpPlanDetailDTO'] is not None:
+#                 review2 = json_data1['bidpPlanDetailDTO']
+#
+#         if review1['notifyNo'] is None:
+#             review1['notifyNo'] = 0
+#
+#         if review1['publicDate'] is None:
+#             review1['publicDate'] = 0
+#
+#         if review1['investorName'] is None:
+#             review1['investorName'] = 0
+#
+#         if review2['planNo'] is None:
+#             review2['planNo'] = 0
+#
+#         if review1['bidName'] is None:
+#             review1['bidName'] = 0
+#
+#         if review1['bidEstimatePrice'] is None:
+#             review1['bidEstimatePrice'] = 0
+#
+#         if review1['bidPrice'] is None:
+#             review1['bidPrice'] = 0
+#
+#         if review1['ctype'] is None:
+#             review1['ctype'] = 0
+#
+#         if review1['bidForm'] is None:
+#             review1['bidForm'] = 0
+#
+#         if review1['bidMode'] is None:
+#             review1['bidMode'] = 0
+#
+#         if review1['bidField'] is None:
+#             review1['bidField'] = 0
+#
+#         if review1['decisionDate'] is None:
+#             review1['decisionDate'] = 0
+#
+#         if review1['decisionAgency'] is None:
+#             review1['decisionAgency'] = 0
+#
+#         if review1['decisionNo'] is None:
+#             review1['decisionNo'] = 0
+#
+#         if review1['reportFileId'] is None:
+#             link1 = 0
+#         else:
+#             link1 = 'http://localhost:1234/api/download/file/browser/public?fileId=' + review1['reportFileId']
+#
+#         if review1['isDomestic'] is None:
+#             review1['isDomestic'] = ''
+#         else:
+#             if review1['isDomestic'] == 1 or review1['isDomestic'] == True:
+#                 review1['isDomestic'] = 'Trong nước'
+#             else:
+#                 review1['isDomestic'] = 'Quốc tế'
+#
+#         nhap = [0]
+#         nhap.clear()
+#         if review1['lotResultDTO'] is not None:
+#             if review1['lotResultDTO'][0] is not None:
+#                 if review1['lotResultDTO'][0]['contractorList'] is not None:
+#                     for nhathau in review1['lotResultDTO'][0]['contractorList']:
+#                         if nhathau['bidResult'] == 1:
+#                             if nhathau['orgCode'] is None:
+#                                 nhathau['orgCode'] = 0
+#
+#                             if nhathau['orgFullname'] is None:
+#                                 nhathau['orgFullname'] = 0
+#
+#                             if nhathau['bidWiningPrice'] is None:
+#                                 nhathau['bidWiningPrice'] = 0
+#
+#                                 nhap.append([nhathau['orgCode'], nhathau['orgFullname'], nhathau['bidWiningPrice']])
+#
+#         details.extend(
+#             [review1['notifyNo'], review1['publicDate'], review1['investorName'], review2['planNo'], review1['bidName'],
+#              review1['bidEstimatePrice'], review1['bidPrice'], review1['ctype'], review1['bidForm'], review1['bidMode'],
+#              review1['bidField'], review1['decisionDate'], review1['decisionAgency'], review1['decisionNo'], link1,
+#              review1['isDomestic'], nhap, codes])
+#         with open('' + folder_path1 + '/CNTTT_KQM.csv', 'a', encoding="utf-8") as f:
+#             writer = csv.writer(f)
+#             writer.writerow(details)
+#         details.clear()
+#
+#
+#     except requests.ReadTimeout as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(inputResultId)
+#         f.write("Ho so CNTTT KQM bi loi khong lay duoc du lieu: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except requests.exceptions.ConnectionError:
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(inputResultId)
+#         f.write("Ho so CNTTT KQM bi loi khong lay duoc du lieu: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except requests.Timeout as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(inputResultId)
+#         f.write("Ho so CNTTT KQM bi loi khong lay duoc du lieu: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except Exception as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(inputResultId)
+#         f.write("Ho so CNTTT KQM bi loi khong lay duoc du lieu: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#     return
+#
+#
+# def CrawDetail_DT_KCNTTT_1(notifyNo, session1, folder_path1, dem):
+#     cookies2 = {
+#         'COOKIE_SUPPORT': 'true',
+#         'GUEST_LANGUAGE_ID': 'vi_VN',
+#         '_ga': 'GA1.1.2001033887.1675655198',
+#         'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
+#         '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
+#         '5321a273c51a75133e0fb1cd75e32e27': 'ade5164d2e0fd8c83bfac03e189c2b3a',
+#         '_ga_19996Z37EE': 'deleted',
+#         '_ga_19996Z37EE': 'deleted',
+#         'JSESSIONID': '2M0FtYPE249N-JxE30p-BxDAclmuUln5yBJKNNIQ.dc_app1_01',
+#         'LFR_SESSION_STATE_20103': '1676788514796',
+#         'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2345525d5f4f58455e445a4a4217de',
+#         '_ga_19996Z37EE': 'GS1.1.1676788070.5.1.1676789211.0.0.0',
+#         'citrix_ns_id': 'AAE7ar_xYzvrK64AAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==YsnxYw==x_2EGEljGY2abWHfUM_y5bDiYlY=',
+#     }
+#
+#     headers2 = {
+#         'Accept': 'application/json, text/plain, */*',
+#         'Accept-Language': 'en-US,en;q=0.9',
+#         'Cache-Control': 'no-cache',
+#         'Connection': 'keep-alive',
+#         'Content-Type': 'application/json',
+#         # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; 5321a273c51a75133e0fb1cd75e32e27=ade5164d2e0fd8c83bfac03e189c2b3a; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; JSESSIONID=2M0FtYPE249N-JxE30p-BxDAclmuUln5yBJKNNIQ.dc_app1_01; LFR_SESSION_STATE_20103=1676788514796; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2345525d5f4f58455e445a4a4217de; _ga_19996Z37EE=GS1.1.1676788070.5.1.1676789211.0.0.0; citrix_ns_id=AAE7ar_xYzvrK64AAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==YsnxYw==x_2EGEljGY2abWHfUM_y5bDiYlY=',
+#         'Origin': 'https://muasamcong.mpi.gov.vn',
+#         'Pragma': 'no-cache',
+#         'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-4-kqlcnt&id=8051e056-f3b3-4318-bf09-baa91ee3d95d&notifyId=8051e056-f3b3-4318-bf09-baa91ee3d95d&inputResultId=eaf045bc-91fe-4e5d-a02e-fea93bb1bb90&bidOpenId=eafe7066-9c56-4db7-a642-42e7c4674d11&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=1_MTHS&notifyNo=IB2300018722&planNo=PL2300014693&pno=undefined',
+#         'Sec-Fetch-Dest': 'empty',
+#         'Sec-Fetch-Mode': 'cors',
+#         'Sec-Fetch-Site': 'same-origin',
+#         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36 OPR/94.0.0.0',
+#         'sec-ch-ua': '"Chromium";v="108", "Opera GX";v="94", "Not)A;Brand";v="99"',
+#         'sec-ch-ua-mobile': '?0',
+#         'sec-ch-ua-platform': '"Windows"',
+#     }
+#     try:
+#         i = random.randrange(1,10)
+#         time.sleep(i)
+#         session = session1
+#         data2 = '{"notifyNo":"' + notifyNo + '","type":"TBMT","packType":0}'
+#         response2 = session.post(
+#             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/ldtkqmt/bid-notification-p/get-by-id',
+#             cookies=cookies2,
+#             headers=headers2,
+#             data=data2,
+#             allow_redirects=False,
+#             verify=False,
+#             timeout=30,
+#         )
+#
+#         json_data2 = response2.json()
+#         review2 = json_data2
+#         nhap1 = [0]
+#         nhap1.clear()
+#         if review2 is None:
+#             return 0, 0, 0
+#         else:
+#             if review2['bidSubmissionByContractorViewResponse'] is None:
+#                 return 0, 0, 0
+#             else:
+#                 if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is None:
+#                     return 0, 0, 0
+#                 if review2['bidoBidroundMngViewDTO']['successBidOpenDate'] is None:
+#                     review2['bidoBidroundMngViewDTO']['successBidOpenDate'] = 0
+#
+#         for nhathau in review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList']:
+#             if nhathau['contractorCode'] is None:
+#                 nhathau['contractorCode'] = 0
+#
+#             if nhathau['contractorName'] is None:
+#                 nhathau['contractorName'] = 0
+#
+#             if nhathau['bidPrice'] is None:
+#                 nhathau['bidPrice'] = 0
+#
+#             if nhathau['alternativeTech'] is None:
+#                 nhathau['alternativeTech'] = 0
+#
+#             if nhathau['bidFinalPrice'] is None:
+#                 nhathau['bidFinalPrice'] = 0
+#
+#             if nhathau['bidValidityNum'] is None:
+#                 nhathau['bidValidityNum'] = 0
+#
+#             if nhathau['bidGuarantee'] is None:
+#                 nhathau['bidGuarantee'] = 0
+#
+#             if nhathau['bidGuaranteeValidity'] is None:
+#                 nhathau['bidGuaranteeValidity'] = 0
+#
+#             if nhathau['contractPeriodDT'] is None:
+#                 nhathau['contractPeriodDT'] = 0
+#
+#             if nhathau['contractPeriodDTUnit'] is None:
+#                 nhathau['contractPeriodDTUnit'] = 0
+#
+#             nhap1.append(
+#                 [nhathau['contractorCode'], nhathau['contractorName'], nhathau['bidPrice'], nhathau['alternativeTech'],
+#                  nhathau['bidFinalPrice'], nhathau['bidValidityNum'], nhathau['bidGuarantee'],
+#                  nhathau['bidGuaranteeValidity'],
+#                  str(nhathau['contractPeriodDT']) + str(nhathau['contractPeriodDTUnit'])])
+#             dem = dem + 1
+#
+#         return nhap1, review2['bidoBidroundMngViewDTO']['successBidOpenDate'], dem
+#
+#
+#     except requests.ReadTimeout as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(notifyNo)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 3: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except requests.exceptions.ConnectionError:
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(notifyNo)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 3: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except requests.Timeout as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(notifyNo)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 3: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except Exception as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(notifyNo)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 3: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#
+# def CrawDetail_DT_KCNTTT_2(inputResultId, session1, folder_path1, nhap2):
+#     cookies3 = {
+#         'COOKIE_SUPPORT': 'true',
+#         'GUEST_LANGUAGE_ID': 'vi_VN',
+#         '_ga': 'GA1.1.2001033887.1675655198',
+#         'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
+#         '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
+#         '5321a273c51a75133e0fb1cd75e32e27': 'ade5164d2e0fd8c83bfac03e189c2b3a',
+#         '_ga_19996Z37EE': 'deleted',
+#         '_ga_19996Z37EE': 'deleted',
+#         'LFR_SESSION_STATE_20103': '1677299771614',
+#         'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2245525d5f4f58455e445a4a4217de',
+#         'JSESSIONID': 'j32Jyt6aLSDjzUCPbJ54aLZszP5dzJwMXAj-_n7i.dc_app1_02',
+#         '_ga_19996Z37EE': 'GS1.1.1677302324.43.1.1677302340.0.0.0',
+#         'citrix_ns_id': 'AAQ7MZr5YzucIbwAAAAAADuFeyfrzB16Q6f2O8qetWxEjgrmsRagqTk7pAb08kWUOw==y535Yw==exYEMKTSv390EFm78JcEbK4CM14=',
+#     }
+#
+#     headers3 = {
+#         'Accept': 'application/json, text/plain, */*',
+#         'Accept-Language': 'en-US,en;q=0.9',
+#         'Cache-Control': 'no-cache',
+#         'Connection': 'keep-alive',
+#         'Content-Type': 'application/json',
+#         # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; 5321a273c51a75133e0fb1cd75e32e27=ade5164d2e0fd8c83bfac03e189c2b3a; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; LFR_SESSION_STATE_20103=1677299771614; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2245525d5f4f58455e445a4a4217de; JSESSIONID=j32Jyt6aLSDjzUCPbJ54aLZszP5dzJwMXAj-_n7i.dc_app1_02; _ga_19996Z37EE=GS1.1.1677302324.43.1.1677302340.0.0.0; citrix_ns_id=AAQ7MZr5YzucIbwAAAAAADuFeyfrzB16Q6f2O8qetWxEjgrmsRagqTk7pAb08kWUOw==y535Yw==exYEMKTSv390EFm78JcEbK4CM14=',
+#         'Origin': 'https://muasamcong.mpi.gov.vn',
+#         'Pragma': 'no-cache',
+#         'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-4-kqlcnt&id=aca05bb6-40b7-43a7-b4f8-9fcb5ddb9097&notifyId=aca05bb6-40b7-43a7-b4f8-9fcb5ddb9097&inputResultId=a313cf55-5bc5-4003-9cb4-8fde3e4dc2ad&bidOpenId=00e4e371-cb82-4d7a-8cca-b432cceb9580&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=1_MTHS&notifyNo=IB2300023119&planNo=PL2300018300&pno=undefined',
+#         'Sec-Fetch-Dest': 'empty',
+#         'Sec-Fetch-Mode': 'cors',
+#         'Sec-Fetch-Site': 'same-origin',
+#         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 OPR/95.0.0.0',
+#         'sec-ch-ua': '"Opera GX";v="95", "Chromium";v="109", "Not;A=Brand";v="24"',
+#         'sec-ch-ua-mobile': '?0',
+#         'sec-ch-ua-platform': '"Windows"',
+#     }
+#     try:
+#         i = random.randrange(1,10)
+#         time.sleep(i)
+#         session = session1
+#         data3 = '{"id":"' + inputResultId + '"}'
+#         response3 = session.post(
+#             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/contractor-input-result/get',
+#             cookies=cookies3,
+#             headers=headers3,
+#             data=data3,
+#             allow_redirects=False,
+#             verify=False,
+#             timeout=30,
+#         )
+#
+#         json_data3 = response3.json()
+#         review3 = json_data3
+#         nhap2 = [0]
+#         nhap2.clear()
+#         if review3 is None:
+#             return
+#         else:
+#             if review3['bideContractorInputResultDTO'] is None:
+#                 return
+#             else:
+#                 if review3['bideContractorInputResultDTO']['lotResultDTO'] is None:
+#                     return
+#                 else:
+#                     if review3['bideContractorInputResultDTO']['lotResultDTO'][0] is None:
+#                         return
+#                     else:
+#                         if review3['bideContractorInputResultDTO']['lotResultDTO'][0]['contractorList'] is None:
+#                             return
+#
+#         for nhathau in review3['bideContractorInputResultDTO']['lotResultDTO'][0]['contractorList']:
+#             if nhathau['orgCode'] is None:
+#                 nhathau['orgCode'] = 0
+#
+#             if nhathau['orgFullname'] is None:
+#                 nhathau['orgCode'] = 0
+#
+#             if nhathau['lotFinalPrice'] is None:
+#                 nhathau['orgCode'] = 0
+#
+#             if nhathau['bidWiningPrice'] is None:
+#                 nhathau['orgCode'] = 0
+#
+#             if nhathau['cperiod'] is None:
+#                 nhathau['orgCode'] = 0
+#
+#             if nhathau['cperiodUnit'] is None:
+#                 nhathau['orgCode'] = 0
+#
+#             if nhathau['bidResult'] is None:
+#                 nhap2.append([nhathau['orgCode'], nhathau['orgFullname'], nhathau['reason'], 0, 0])
+#
+#             elif nhathau['bidResult'] == 1:
+#                 nhap2.append(
+#                     [nhathau['orgCode'], nhathau['orgFullname'], nhathau['lotFinalPrice'], nhathau['bidWiningPrice'],
+#                      str(nhathau['cperiod']) + nhathau['cperiodUnit']])
+#
+#         return nhap2
+#     except requests.ReadTimeout as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(inputResultId)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 2: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except requests.exceptions.ConnectionError:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(inputResultId)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 2: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except requests.Timeout as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(inputResultId)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 2: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
+#
+#     except Exception as err:
+#         print(f"{type(err).__name__} was raised: {err}")
+#         f = open('' + folder_path1 + "/log.txt", "a")
+#         h = "{}".format(inputResultId)
+#         f.write("Ho so TBMT CNTTT bi loi khong lay duoc du lieu 2: " + h)
+#         f.write('\n')
+#         f.close()
+#         i = random.randrange(1, 10)
+#         time.sleep(i)
+#         session1.close()
+#         session1 = requests.Session()
+#         pass
 
 
 SoTrangNT = SoTrangNhaThau(startDay, endDay)
