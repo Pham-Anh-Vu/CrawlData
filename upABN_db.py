@@ -47,18 +47,30 @@ def timeUpd():
     return crea_at
 
 def time_close(data):
-    time = datetime.datetime.strptime(data, '%Y-%m-%dT%H:%M:%S')
-    time = datetime.datetime.strftime(time, '%Y-%m-%d %H:%M:%S')
+    if data == '':
+        return None
+    else:
+        data = data[:19]
+        time = datetime.datetime.strptime(data, '%Y-%m-%dT%H:%M:%S')
+        time = datetime.datetime.strftime(time, '%Y-%m-%d %H:%M:%S')
     return time
 
 def time_post(data):
-    tim_post = datetime.datetime.strptime(data, '%Y-%m-%dT%H:%M:%S.%f')
-    tim_post = datetime.datetime.strftime(tim_post, '%Y-%m-%d %H:%M:%S')
+    if data == '':
+        return None
+    else:
+        data = data[:19]
+        tim_post = datetime.datetime.strptime(data, '%Y-%m-%dT%H:%M:%S')
+        tim_post = datetime.datetime.strftime(tim_post, '%Y-%m-%d %H:%M:%S')
     return tim_post
 
 def date_app(data):
-    dat_app = datetime.datetime.strptime(data, '%d/%m/%Y')
-    dat_app = datetime.datetime.strftime(dat_app, '%Y-%m-%d %H:%M:%S')
+    if data == '':
+        return None
+    else:
+        
+        dat_app = datetime.datetime.strptime(data, '%d/%m/%Y')
+        dat_app = datetime.datetime.strftime(dat_app, '%Y-%m-%d %H:%M:%S')
     return dat_app
 
 def upDataDB(type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no, time_bid_closing, time_posting, date_of_approval):
@@ -85,6 +97,24 @@ def upDataDB_DXT(bid_open_tim, news_id):
     conn.commit()
 
 def upDataDB_1_DXT(type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no):
+    conn = connect()
+    mycursor = conn.cursor()
+    sql = "INSERT INTO pccc_app_bidding_news (type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no) " \
+          f"VALUES ('{type_id}', '{bid_type}', '{bid_method}', '{aujusted_limited}', '{created_at}','{updated_at}', '{bid_number}', '{bid_turn_no}');"
+    mycursor.execute(sql)
+    conn.commit()
+    news_id = mycursor.lastrowid
+    news_id = int(news_id)
+    return news_id
+
+def upDataDB_DXT_TV(bid_open_tim, news_id,open_result_status):
+    conn = connect()
+    mycursor = conn.cursor()
+    sql = f"UPDATE pccc_app_bidding_news SET bid_opening_time = '{bid_open_tim}', open_result_status = '{open_result_status}' WHERE `id` = '{news_id}';"
+    mycursor.execute(sql)
+    conn.commit()
+
+def upDataDB_1_DXT_TV(type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no):
     conn = connect()
     mycursor = conn.cursor()
     sql = "INSERT INTO pccc_app_bidding_news (type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no) " \
