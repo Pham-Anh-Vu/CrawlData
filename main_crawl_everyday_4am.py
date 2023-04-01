@@ -25,7 +25,7 @@ all_objects = muppy.get_objects()
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-yesterday = datetime.now() - timedelta(days=1)
+yesterday = datetime.now() - timedelta(days=2)
 
 yesterday_str = yesterday.strftime('%Y-%m-%d')
 
@@ -2757,8 +2757,9 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
 
         listHangHoa = []
         listHangHoa.clear()
+        check_listHH = None
         if review['investField'] == 'Hàng hóa' or review['investField'] == 'HH':
-            listx = crawlDetail_HangHoa(data=json_data)
+            listx, check_listHH = crawlDetail_HangHoa(data=json_data)
             listHangHoa.extend(listx)
 
         listFileDinhKemHSMT = []
@@ -2767,7 +2768,7 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
             if json_data['bidoInvBiddingDTO'] != []:
                 listz=crawlDetail_FileDinhKemHSMT(data=json_data['bidoInvBiddingDTO'])
                 listFileDinhKemHSMT.extend(listz)
-
+        listFileHSMT = []
         if review['isInternet'] == 'Qua mạng' or review['isInternet'] == '1' or review['isInternet'] == 1:
             list_file = []
             list_file.clear()
@@ -2795,10 +2796,8 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
                                     pcode = ''
                                 else:
                                     pcode = review1['pcode']
-
                                 name = review1['name']
                                 orderIndex = review1['orderIndex']
-
                                 if lev == 0:
                                     if orderIndex == 0:
                                         stt = sttpcode1
@@ -2868,7 +2867,8 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
                         listHangHoa,#34
                         listFileHSMT,#35
                         decisionFileName,#36
-                        listFileDinhKemHSMT])#37
+                        listFileDinhKemHSMT,
+                        check_listHH])#37
 
         bidType = upABN_db.bid_type(details[10])
         bidMethod = upABN_db.bid_method(details[16])
@@ -2999,6 +2999,7 @@ def crawlDetail_FileDinhKemHSMT(data):
 def crawlDetail_HangHoa(data):
     list_HH = []
     list_HH.clear()
+    check_list = None
     if data is not None:
         if data['bidoInvBiddingDTO'] is not None:
             review = data['bidoInvBiddingDTO']
@@ -3007,24 +3008,43 @@ def crawlDetail_HangHoa(data):
                     review_dic = json.loads(review1['formValue'])
                     table = review_dic['Table']
                     for hh in table:
-                        name = hh['name']
-                        uom = hh['uom']
-                        qty = hh['qty']
-                        fromDate = hh['fromDate']
-                        toDate = hh['toDate']
-                        description = hh['description']
-                        list_HH.append([name, uom, qty, fromDate, toDate, description])
-    return list_HH
+                        data_hh = json.dumps(hh)
+                        if data_hh.find('name') != -1:
+                            check_list = 0
+                            name = hh['name']
+                            uom = hh['uom']
+                            qty = hh['qty']
+                            fromDate = hh['fromDate']
+                            toDate = hh['toDate']
+                            description = hh['description']
+                            list_HH.append([name, uom, qty, fromDate, toDate, description])
+                        else:
+                            check_list = 1
+                            name = hh['lotName']
+                            LEPrice = hh['lotEstimatePrice']
+                            cperiod = str(hh['cperiod']) + hh['cperiodUnit']
+                            LPrice = hh['lotPrice']
+                            if hh['lotGuaranteeValue'] == None:
+                                LGValue = 0
+                            else:
+                                LGValue = hh['lotGuaranteeValue']
+                            uom = hh['uom']
+                            qty = hh['quantity']
+                            list_HH.append([name, LEPrice, cperiod, LPrice, LGValue, uom, qty])
+
+    return list_HH, check_list
 
 def crawlDetail_HangHoa_CNTTT(data):
+    a = []
     if data['bideContractorInputResultDTO'] is not None:
         if data['bideContractorInputResultDTO']['lotResultDTO'] is not None:
             if data['bideContractorInputResultDTO']['lotResultDTO'][0]['goodsList'] is not None:
                 data_list = data['bideContractorInputResultDTO']['lotResultDTO'][0]['goodsList']
                 reviews = json.loads(data_list)
                 for review in reviews:
+                    print(review['formValue']['lotContent']['Table'])
                     return review['formValue']['lotContent']['Table']
-
+    return a
 
 def CrawlDetail_TT_DA(code, details, session1, codes, folder_path1):
     cookies = {
@@ -4637,8 +4657,7 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
 
         nhap2 = [0]
         nhap2.clear()
-        nhap2, decisionCNTTT, listHangHoa = CrawDetail_DT_CNTTT_2(inputResultId=code2, session1=session1, folder_path1=folder_path1, nhap2=nhap2)
-        print("111222")
+        nhap2, decisionCNTTT, listHangHoa, listLienDanh = CrawDetail_DT_CNTTT_2(inputResultId=code2, session1=session1, folder_path1=folder_path1, nhap2=nhap2)
         # Request theo id trong list_TBMT_CDT de lay cac thong tin cho vao CT_TBMT_CDT
         i = random.randrange(1,10)
         time.sleep(i)
@@ -4867,8 +4886,6 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
             link2 = 0
         if review1['bidPrice'] is None:
             review1['bidPrice'] = 0
-        lienDanh = LienDanh.liendanh()
-        print(listHangHoa)
         details.extend([review1['notifyNo'],
                         review1['publicDate'],
                         review1["notifyVersion"],  # 2
@@ -4908,7 +4925,7 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
                         nhap2,
                         codes,
                         decisionCNTTT,
-                        lienDanh,
+                        listLienDanh,
                         listHangHoa])
         bidType = upABN_db.bid_type(details[10])
         bidMethod = upABN_db.bid_method(details[16])
@@ -4917,15 +4934,16 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
         time_post = upABN_db.time_post(details[1])
         date_app = upABN_db.date_app2(decisionDate)
         news_id = 0
-
         if upABN_db.ktTrungDL(review1['notifyNo'], review1["notifyVersion"]) == None:
             news_id = upABN_db.upDataDB(8, bidType, bidMethod, 1, crea_at, crea_at, review1['notifyNo'],
                                         review1["notifyVersion"],
                                         tim_close, time_post, date_app)
             upABNDetail_db.upData_CNTTT(details, news_id)
             upABO_result_complete_gd_hsdt.upData(details, news_id, 1)
-            upABRGoods_db.upData_CNTTT(listHangHoa, news_id)
-            print(1)
+            # print(f"ListHH ---- {listHangHoa}")
+            if listHangHoa != []:
+                upABRGoods_db.upData_CNTTT(listHangHoa, news_id)
+            # print(1)
 
         with open('' + folder_path1 + '/CNTTT.csv', 'a', encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -5242,10 +5260,7 @@ def CrawDetail_DT_CNTTT_2(inputResultId, session1, folder_path1, nhap2):
                     [nhathau['orgCode'], nhathau['orgFullname'], nhathau['lotFinalPrice'], nhathau['bidWiningPrice'],
                      str(nhathau['cperiod']) + nhathau['cperiodUnit']])
 
-
-
-        print(review3)
-        return nhap2,  review3['bideContractorInputResultDTO']['decisionDate'], crawlDetail_HangHoa_CNTTT(review3)
+        return nhap2,  review3['bideContractorInputResultDTO']['decisionDate'], crawlDetail_HangHoa_CNTTT(review3), LienDanh.liendanh(review3)
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
         f = open('' + folder_path1 + "/log.txt", "a")
