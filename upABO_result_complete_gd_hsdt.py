@@ -8,9 +8,9 @@ def time(data):
     return time
 
 def upData(details, news_id, result):
-    print(details[36])
+    # print(details[36])
     for i in details[36]:
-        print(i)
+        # print(i)
         if len(i) == 5 and i[4] != '00' and i[4] != 0:
             contractor_name = i[1]
             conn = connectdb.connect()

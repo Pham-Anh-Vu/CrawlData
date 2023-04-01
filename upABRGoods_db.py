@@ -6,9 +6,12 @@ def upData_CNTTT(list, news_id):
     conn = connectdb.connect()
     cursor = conn.cursor()
     for i in list:
+        print(f"i------{i}")
         data = ()
-        goods_name = i['name']
-        print(goods_name)
+        if i['name'] == None:
+            goods_name = ''
+        else:
+            goods_name = i['name']
         label = i['label']
         mass = i['qty']
         unit = i['uom']
