@@ -423,7 +423,7 @@ def upData_DXT(details, id):
 
     value10 = "Hoàn thành mở thầu"
 
-    value11 = str(len(details[33]))
+    value11 = str(details[31])
 
     records = [
         (key1, sub_title, title1, value1, id),
@@ -548,8 +548,7 @@ def upData_DXT_TV(details, id):
 
     value7 = details[11]
     
-    value8 = str(len(details[33]))
-    print(details[33])
+    value8 = str(details[31])
 
     value9 = "Hoàn thành mở đề xuất kỹ thuật"
     

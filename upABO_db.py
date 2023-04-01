@@ -88,7 +88,7 @@ def upDataDB_TV(details, news_id):
         # vì data test chưa có app job company profile nên subject id đặt bằng 0
         data = (news_id, number_dkkd, contractor_name, effect_hsdxkt, effect_bd_dt, duration_contract, time(str(datetime.now())), time(str(datetime.now())), 0,subject_type, )
         sql = "INSERT INTO pccc_app_bidding_open_result_open_hskt_complete (news_id, number_dkkd, contractor_name, effect_hsdxkt, effect_bd_dt, duration_of_contract, created_at, updated_at, subject_id, subject_type)" \
-              f"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
+              f"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
         cur.execute(sql, data)
         conn.commit()
 

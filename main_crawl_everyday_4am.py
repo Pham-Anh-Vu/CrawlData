@@ -16,10 +16,20 @@ import upABNFiles_db
 import upABN_db
 import LienDanh
 from pympler import muppy
-
+import upFileDinhKemHSMT
 import upABO_db
 import upABO_result_complete_gd_hsdt
 import upABRGoods_db
+from upABNFiles_db import fileDangTai as fileDangTaidb
+
+global fileDangTai
+fileDangTai = fileDangTaidb
+
+global checkListFileDangTai
+
+global list_upFile
+list_upFile = []
+
 
 all_objects = muppy.get_objects()
 
@@ -144,6 +154,9 @@ class MyThread(threading.Thread):
 
                     CrawlMaTinTucDongThau(pageNumber=self.pageNumber, codes=self.codes, details=self.details,
                                           session1=self.session, folder_path1=self.folder_path1)
+                
+                elif self.typeOfThread == 'upData':
+                    main()
 
                 if random.randrange(1, 4) == 2:
                     self.session.close()
@@ -151,6 +164,152 @@ class MyThread(threading.Thread):
 
                 self.pageNumber = self.pageNumber + self.step
 
+class MyThread2(threading.Thread):
+    def __init__(self, threadID, name, step, typeOfThread, list_upFile1):
+        threading.Thread.__init__(self=self)
+
+        self.threadID = threadID
+
+        self.name = name
+
+        self.step = step
+
+        self.typeOfThread = typeOfThread
+
+        # time sleep of each thread
+        self.i = 0
+
+        self.details = [0]
+
+        self.codes = [0]
+
+        self.session = requests.Session()
+        self.adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20,max_retries=3)
+        self.session.mount('http://', self.adapter)
+        self.session.mount('https://', self.adapter)
+
+        if len(list_upFile) >= int(self.threadID):
+            if list_upFile != []:
+                self.list = list_upFile1[int(self.threadID)]
+                self.list_upFile2 = self.list[0]
+                self.code_file = self.list[1]
+            else:
+                self.list = []
+                self.list_upFile2 = ''
+                self.code_file = 0
+        else:
+            self.list = []
+            self.list_upFile2 = ''
+            self.code_file = 0
+        
+    def run(self):
+        print("Starting upFile" + self.name)
+        while True:
+            if self.list != []:
+                del list_upFile[self.threadID]
+                self.media_id, self.file_name_for_user, self.url = up_pccc_app_medias(self.list_upFile2)
+                update_pccc_news_files(self.media_id, self.file_name_for_user, self.url, self.code_file)
+                if len(list_upFile) >= int(self.threadID) :
+                    self.list = self.list_upFile1[int(self.threadID)]
+                    self.list_upFile2 = self.list[0]
+                    self.code_file = self.list[1]
+                else:
+                    self.list = []
+                    self.list_upFile2 = ''
+                    self.code_file = 0
+
+def update_pccc_news_files(media_id, file_name_for_user, url, code_file):
+    conn = connectdb.connect()
+    cur = conn.cursor()
+    sql = 'SELECT id FROM pccc_app_bidding_news_files WHERE file_name = %s ORDER BY created_at DESC'
+    val = ('File đang tải' +str(code_file),)
+    cur.execute(sql, val)
+    myresult = cur.fetchone()
+    if myresult != []:
+        news_files_id = myresult[0]
+    
+    sql = 'UPDATE pccc_app_bidding_news_files SET file_name = %s , link_muasamcong = %s , media_id=%s , updated_at = NOW() WHERE `id` = %s'
+    val = (file_name_for_user, url, media_id,news_files_id)
+    cur.execute(sql, val)
+    conn.commit()
+    
+def upData(details, result, link1, fileDangTai):
+    id1 = details[33][0]
+    object_type = 'App\Models\BiddingNewsDetail'
+    object_id = int(result)
+    record = []
+    media_id = None
+    record.append([object_type, object_id, 'Quyết định phê duyệt', link1 ,media_id, 1])
+    fileDangTai1 = fileDangTai
+    for i in details[35]:
+        bidform = i[4]
+        link = f"https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode={bidform}&id={id1}"
+        filename = i[3]
+        if filename == "Quyết định phê duyệt":
+            tuples = (object_type, object_id, filename, link, media_id, 1)
+            record.append(tuples)
+        else:
+            tuples = (object_type, object_id, filename, link, media_id, None)
+            record.append(tuples)
+        for z in details[37]:
+            if i[5] == z[2]:
+                if z[1] == i[4]:
+                    list_upFile.append([z[0],fileDangTai1])
+                    tuples = (object_type, object_id, 'File đang tải '+str(fileDangTai1), None, None, None)
+                    fileDangTai1 = fileDangTai1 +1
+                    record.append(tuples)
+
+                else:
+                    if z[2] == 'P2':
+                        list_upFile.append([z[0],fileDangTai1])
+                        tuples = (object_type, object_id, 'File đang tải '+str(fileDangTai1), None, None, None)
+                        fileDangTai1 = fileDangTai1 +1
+                        record.append(tuples)
+            else:
+                if z[2]=='C8':
+                    if i[4] == 'C8':
+                        list_upFile.append([z[0],fileDangTai1])
+                        tuples = (object_type, object_id, 'File đang tải '+str(fileDangTai1), None, None, None)
+                        fileDangTai1 = fileDangTai1 +1
+                        record.append(tuples)
+            
+    conn = connectdb.connect()
+    cur = conn.cursor()
+    for recordx in record:
+        sql = "INSERT INTO pccc_app_bidding_news_files (object_type, object_id, file_name, link_muasamcong, media_id, created_at, updated_at, is_big_file) VALUES (%s, %s, %s, %s, %s, NOW(), NOW(), %s);"
+        cur.execute(sql, recordx)
+        conn.commit()
+
+    return fileDangTai1
+
+
+def up_pccc_app_medias(code):
+    url = 'http://localhost:1234/api/download/file/browser/public?fileId='+code
+    """name = 'a.pdf'
+    type = 'pdf'
+    path = 'a'
+    file_name_for_user = 'a.pdf'"""
+    name,type,path, file_name_for_user = upFileDinhKemHSMT.downFileAndUpLoad(url=url)
+    conn = connectdb.connect()
+    cur = conn.cursor()
+    sql= "INSERT INTO pccc_app_medias (name, type, path, created_at, updated_at) VALUES (%s, %s, %s, NOW(), NOW())"
+    val = (name, type, path)
+    cur.execute(sql,val)
+    conn.commit()
+    media_id = cur.lastrowid
+    media_id = int(media_id)
+    return media_id, file_name_for_user, url
+
+def main():
+    numberOfThread = 5
+    threadUpFile = 5
+    threads = []
+    for i in range(numberOfThread):
+        a = i + 1
+        b = str(a)
+        thread = MyThread2(i, "thread" + b, threadUpFile, 'upFile', list_upFile)
+        threads.append(thread)
+        thread.start()
 
 def SoTrangNhaThau(startDay, endDay):
     cookies = {
@@ -2771,6 +2930,7 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
 
         listFileHSMT = []
         listFileHSMT.clear()
+        list_file = []
         if review['isInternet'] == 'Qua mạng' or review['isInternet'] == '1' or review['isInternet'] == 1:
             list_file = []
             list_file.clear()
@@ -2823,7 +2983,11 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
                                         stt = orderIndex + sttpcode3 + 1
 
                                 list_file.append([stt, idFile, lev, name, code1, pcode, orderIndex])
-
+                    
+            
+        if list_file is None or list_file == []:
+            listFileHSMT = []
+        else:
             listFileHSMT = []
             listFileHSMT.clear()
             listFileHSMT = sorted(list_file, key=lambda list_file: list_file[0])
@@ -2896,18 +3060,17 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
             cur.execute(sql, val)
             conn.commit()
             myresult = cur.fetchone()
-
             if myresult is not None:
                 if myresult != []:
                     result = myresult[0]
-
-
-                    upABNFiles_db.upData(details, result, link1)
-
+                    global fileDangTai
+                    fileDangTai = upData(details, result, link1,fileDangTai)
+                    
         with open('' + folder_path1 + '/TBMT_CDT.csv', 'a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)
         details.clear()
+
 
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
@@ -3010,13 +3173,18 @@ def crawlDetail_HangHoa(data):
                     review_dic = json.loads(review1['formValue'])
                     table = review_dic['Table']
                     for hh in table:
-                        name = hh['name']
-                        uom = hh['uom']
-                        qty = hh['qty']
-                        fromDate = hh['fromDate']
-                        toDate = hh['toDate']
-                        description = hh['description']
-                        list_HH.append([name, uom, qty, fromDate, toDate, description])
+                        hh_data = json.dumps(hh)
+                        if hh_data.find('name') != -1:
+                            name = hh['name']
+                            uom = hh['uom']
+                            qty = hh['qty']
+                            fromDate = hh['fromDate']
+                            toDate = hh['toDate']
+                            description = hh['description']
+                            list_HH.append([name, uom, qty, fromDate, toDate, description])
+                        else:
+                            list_HH = []
+                            print(hh)
     return list_HH
 
 def crawlDetail_HangHoa_CNTTT(data):
@@ -3480,9 +3648,9 @@ def CrawlMaTinTucDongThau(pageNumber, codes, details, session1, folder_path1):
             #if code[4] == 'DHT':
                 #CrawlDetail_DT_DHT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
-            if code[4] == 'KCNTTT':
-                if code[6] == 1:
-                    CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
+            #if code[4] == 'KCNTTT':
+                #if code[6] == 1:
+                    #CrawlDetail_DT_KCNTTT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1)
                 #elif code[6] == 0:
                     #CrawDetail_DT_KCNTTT_KQM(inputResultId=code[5],details=details,session1=session1,codes=code,folder_path1=folder_path1)
 
@@ -3490,10 +3658,10 @@ def CrawlMaTinTucDongThau(pageNumber, codes, details, session1, folder_path1):
                 if code[6] == 1:
                     if code[7] == 'TV':
                         if code[3] == 'notify-contractor-step-2-kqmt':
-                            CrawlDetail_DT_DXT_TV_KQMT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1])
+                            CrawlDetail_DT_DXT_TV_KQMT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1],mode='kqmt')
                             #Code DXT KQMT
                         elif code[3] == 'notify-contractor-step-3-dsntdkt':
-                            CrawlDetail_DT_DXT_TV_DSNTDKT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1])
+                            CrawlDetail_DT_DXT_TV_DSNTDKT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1],mode = 'dsntdkt')
                             #Code DXT DSNTDXKT
                         else:
                             print(code)
@@ -3693,8 +3861,8 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
                     datesucces = review2['bidoBidroundMngViewDTO']["successBidOpenDate"]
 
             if review2['bidSubmissionByContractorViewResponse'] is None:
-                nhap1, dem1, datesucces = CrawlDetail_DT_DXT_2(code=code, session1=session1, codes=codes,
-                                                              folder_path1=folder_path1, notify_no=notify_no)
+                nhap1, dem1, datesucces = CrawlDetail_DT_DXT_2(code=code, session1=session1, codes=codes, folder_path1=folder_path1, notify_no=notify_no)
+
             else:
                 if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is not None:
                     for nhathau in review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList']:
@@ -3987,8 +4155,6 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
         elif review['investField'] == "XL":
             review['investField'] = "Xây lắp"
 
-        
-
         details.extend([
             review['notifyNo'],#0
             review['publicDate'],#1
@@ -4039,6 +4205,7 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
         if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
 
             if details[10] == 'Tư vấn' or details[10] == 'TV':
+
                 if mode == 'dsntdkt':
 
                     news_id = upABN_db.upDataDB_1_DXT_TV(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
@@ -4066,8 +4233,8 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
 
                 upABO_db.upDataDB(details, news_id)
 
-            details.clear()
-            return news_id
+        details.clear()
+        return news_id
 
 
     except requests.ReadTimeout as err:
@@ -4292,10 +4459,730 @@ def CrawlDetail_DT_DXT_2(code, session1, codes, folder_path1, notify_no):
         pass
     return
 
-def CrawlDetail_DT_DXT_TV_KQMT(code,details,session1,codes,folder_path1,notify_no):
-    CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no, mode= 'kqmt')
+def CrawlDetail_DT_DXT_TV_KQMT(code,details,session1,codes,folder_path1,notify_no,mode):
+    cookies = {
+        'COOKIE_SUPPORT': 'true',
+        'GUEST_LANGUAGE_ID': 'vi_VN',
+        '_ga': 'GA1.1.2001033887.1675655198',
+        'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
+        '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
+        '5321a273c51a75133e0fb1cd75e32e27': 'ade5164d2e0fd8c83bfac03e189c2b3a',
+        '_ga_19996Z37EE': 'deleted',
+        '_ga_19996Z37EE': 'deleted',
+        'LFR_SESSION_STATE_20103': '1677207191833',
+        'JSESSIONID': 'rKdcx8DYHay2zkRr5ndZqzXZ6jN5HI0muLhOk7QL.dc_app1_02',
+        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2245525d5f4f58455e445a4a4217de',
+        '_ga_19996Z37EE': 'GS1.1.1677204596.32.1.1677207694.0.0.0',
+        'citrix_ns_id': 'AAE7chz4Yzs0w7YAAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==FSz4Yw==v1HcXeWvpdwRKX52o0Vz9AiBsLA=',
+    }
 
-def CrawlDetail_DT_DXT_TV_DSNTDKT(code,details,session1,codes,folder_path1,notify_no):
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/json',
+        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; 5321a273c51a75133e0fb1cd75e32e27=ade5164d2e0fd8c83bfac03e189c2b3a; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; LFR_SESSION_STATE_20103=1677207191833; JSESSIONID=rKdcx8DYHay2zkRr5ndZqzXZ6jN5HI0muLhOk7QL.dc_app1_02; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2245525d5f4f58455e445a4a4217de; _ga_19996Z37EE=GS1.1.1677204596.32.1.1677207694.0.0.0; citrix_ns_id=AAE7chz4Yzs0w7YAAAAAADuFeyfrzB16Q6f2OzBmufpqrxJznGrtoFWvkMWyR9BuOw==FSz4Yw==v1HcXeWvpdwRKX52o0Vz9AiBsLA=',
+        'Origin': 'https://muasamcong.mpi.gov.vn',
+        'Pragma': 'no-cache',
+        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-2-kqmt&id=74daf170-49dc-40f6-b1d4-aa6ea598e52c&notifyId=74daf170-49dc-40f6-b1d4-aa6ea598e52c&inputResultId=undefined&bidOpenId=eec02f9e-d571-4acb-83c3-17e5918bc88e&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=1_MTHS&notifyNo=IB2300020092&planNo=PL2300014512&pno=undefined',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36 OPR/95.0.0.0',
+        'sec-ch-ua': '"Opera GX";v="95", "Chromium";v="109", "Not;A=Brand";v="24"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+    }
+
+    cookies2 = {
+        'COOKIE_SUPPORT': 'true',
+        'GUEST_LANGUAGE_ID': 'vi_VN',
+        '_ga': 'GA1.1.2001033887.1675655198',
+        'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
+        '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
+        '_ga_19996Z37EE': 'deleted',
+        '5321a273c51a75133e0fb1cd75e32e27': 'c47b17d3ecf7b555d4037c14903e3631',
+        '_ga_19996Z37EE': 'deleted',
+        'JSESSIONID': '2rSBAJO2OrQqJqPQwr7KLbpm09apgRvh-CVhJEEC.dc_app1_02',
+        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2245525d5f4f58455e445a4a4217de',
+        'LFR_SESSION_STATE_20103': '1680168644771',
+        '_ga_19996Z37EE': 'GS1.1.1680167073.48.1.1680168732.0.0.0',
+        'citrix_ns_id': 'AAM7vFYlZDssIOoAAAAAADuFeyfrzB16Q6f2O3wkwp-X_KBiAk_jQriThj-xlt31Ow==qFolZA==JH3rVDxhrSsoSJWPQ6uj5VC23jQ=',
+    }
+
+    headers2 = {
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/json',
+        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; _ga_19996Z37EE=deleted; 5321a273c51a75133e0fb1cd75e32e27=c47b17d3ecf7b555d4037c14903e3631; _ga_19996Z37EE=deleted; JSESSIONID=2rSBAJO2OrQqJqPQwr7KLbpm09apgRvh-CVhJEEC.dc_app1_02; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2245525d5f4f58455e445a4a4217de; LFR_SESSION_STATE_20103=1680168644771; _ga_19996Z37EE=GS1.1.1680167073.48.1.1680168732.0.0.0; citrix_ns_id=AAM7vFYlZDssIOoAAAAAADuFeyfrzB16Q6f2O3wkwp-X_KBiAk_jQriThj-xlt31Ow==qFolZA==JH3rVDxhrSsoSJWPQ6uj5VC23jQ=',
+        'Origin': 'https://muasamcong.mpi.gov.vn',
+        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-2-kqmt&id=719b5e6c-0692-4eb9-a36a-aa8a58dba5c9&notifyId=719b5e6c-0692-4eb9-a36a-aa8a58dba5c9&inputResultId=undefined&bidOpenId=dc3a3618-9a92-4b6c-bd57-f45ac6b8ce79&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=LDT&bidMode=1_HTHS&notifyNo=IB2300033071&planNo=PL2300023643&pno=undefined',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 OPR/96.0.0.0',
+        'sec-ch-ua': '"Not=A?Brand";v="8", "Chromium";v="110", "Opera GX";v="96"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+    }
+
+    try:
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session = session1
+        data = '{"id":"' + code + '"}'
+        response = session.post(
+            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/lcnt/bid-po-bido-notify-contractor-view/get-by-id',
+            cookies=cookies,
+            headers=headers,
+            data=data,
+            allow_redirects=False,
+            verify=False,
+            timeout=30,
+        )
+        json_data = response.json()
+        i = random.randrange(1,10)
+        time.sleep(i)
+        data2 = '{"notifyNo":"' + codes[1] + '","type":"TBMT","packType":1}'
+        response2 = session.post(
+            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/ldtkqmt/bid-notification-p/get-by-id',
+            cookies=cookies2,
+            headers=headers2,
+            data=data2,
+            allow_redirects=False,
+            verify=False,
+            timeout=30,
+        )
+        json_data2 = response2.json()
+        review2 = json_data2
+
+        i = random.randrange(1,10)
+        time.sleep(i)
+        data3 = '{"id":"' + code + '"}'
+        response3 = session.post(
+            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/lcnt/bid-notify-contractor-out/get-by-id',
+            cookies=cookies,
+            headers=headers,
+            data=data,
+            allow_redirects=False,
+            verify=False,
+            timeout=30,
+        )
+        json_data3 = response3.json()
+
+        nhap1 = [0]
+        nhap1.clear()
+        dem = 0
+        dem1 = 0
+        datesucces = ""
+
+        if review2 is not None:
+            if review2['bidoBidroundMngViewDTO'] is not None:
+                if review2['bidoBidroundMngViewDTO']["successBidOpenDate"] is not None:
+                    datesucces = review2['bidoBidroundMngViewDTO']["successBidOpenDate"]
+
+            if review2['bidSubmissionByContractorViewResponse'] is None:
+                nhap1, dem1, datesucces = CrawlDetail_DT_DXT_TV_2(code=code, session1=session1, codes=codes,folder_path1=folder_path1, notify_no=notify_no)
+
+            else:
+                if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is not None:
+                    for nhathau in review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList']:
+                        if nhathau['contractorCode'] is None:
+                            nhathau['contractorCode'] = ''
+
+                        if nhathau['contractorName'] is None:
+                            nhathau['contractorName'] = ''
+
+                        if nhathau['bidPrice'] is None:
+                            nhathau['bidPrice'] = ''
+
+                        if nhathau['alternativeTech'] is None:
+                            nhathau['alternativeTech'] = ''
+
+                        if nhathau['bidFinalPrice'] is None:
+                            nhathau['bidFinalPrice'] = ''
+
+                        if nhathau['bidValidityNum'] is None:
+                            nhathau['bidValidityNum'] = ''
+
+                        if nhathau['bidGuarantee'] is None:
+                            nhathau['bidGuarantee'] = ''
+
+                        if nhathau['bidGuaranteeValidity'] is None:
+                            nhathau['bidGuaranteeValidity'] = ''
+
+                        if nhathau['contractPeriodDT'] is None:
+                            nhathau['contractPeriodDT'] = ''
+
+                        if nhathau['contractPeriodDTUnit'] is None:
+                            nhathau['contractPeriodDTUnit'] = ''
+
+                        nhap1.append([nhathau['contractorCode'],
+                                      nhathau['contractorName'],
+                                      nhathau['bidPrice'],
+                                      nhathau['alternativeTech'],
+                                      nhathau['bidFinalPrice'],
+                                      nhathau['bidValidityNum'],
+                                      nhathau['bidGuarantee'],
+                                      nhathau['bidGuaranteeValidity'],
+                                      str(nhathau['contractPeriodDT']) + nhathau['contractPeriodDTUnit']])
+                        dem = dem + 1
+
+        if dem < dem1:
+            dem = dem1
+
+        review = 0
+        data = json.dumps(json_data)
+        check = 0
+
+        if json_data is not None:
+            data = json.dumps(json_data)
+            if data.find('bidoNotifyContractorP') != -1:
+                if json_data['bidoNotifyContractorP'] is not None:
+                    review = json_data['bidoNotifyContractorP']
+                    if review['cPeriod'] is None:
+                        review['cPeriod'] = 0
+                    if review['cPeriodUnit'] is None:
+                        review['cPeriodUnit'] = 0
+                    a = str(review['cPeriod']) + str(review['cPeriodUnit'])
+                    if review['cType'] is not None:
+                        v = review['cType']
+                    else:
+                        v = 0
+                else:
+                    check = 1
+
+            elif data.find('bidoNotifyContractorM') != -1:
+                if json_data['bidoNotifyContractorM'] is not None:
+                    review = json_data['bidoNotifyContractorM']
+                    if review['contractPeriod'] is None:
+                        review['contractPeriod'] = 0
+                    if review['contractPeriodUnit'] is None:
+                        review['contractPeriodUnit'] = 0
+                    a = str(review['contractPeriod']) + str(review['contractPeriodUnit'])
+                    if review['contractType'] is not None:
+                        v = review['contractType']
+                    else:
+                        v = 0
+                else:
+                    check = 1
+
+        if check == 1:
+            json_data = json_data3
+            if json_data is not None:
+                data = json.dumps(json_data)
+                if data.find('bidoNotifyContractorP') != -1:
+                    if json_data['bidoNotifyContractorP'] is not None:
+                        review = json_data['bidoNotifyContractorP']
+                        if review['cPeriod'] is None:
+                            review['cPeriod'] = 0
+                        if review['cPeriodUnit'] is None:
+                            review['cPeriodUnit'] = 0
+                        a = str(review['cPeriod']) + str(review['cPeriodUnit'])
+                        if review['cType'] is not None:
+                            v = review['cType']
+                        else:
+                            v = 0
+                    else:
+                        check = 1
+
+                elif data.find('bidoNotifyContractorM') != -1:
+                    if json_data['bidoNotifyContractorM'] is not None:
+                        review = json_data['bidoNotifyContractorM']
+                        if review['contractPeriod'] is None:
+                            review['contractPeriod'] = 0
+                        if review['contractPeriodUnit'] is None:
+                            review['contractPeriodUnit'] = 0
+                        a = str(review['contractPeriod']) + str(review['contractPeriodUnit'])
+                        if review['contractType'] is not None:
+                            v = review['contractType']
+                        else:
+                            v = 0
+                    else:
+                        check = 1
+
+        fee = 0
+        if review['bidForm'] is None:
+            review['bidForm'] = ''
+        else:
+            if review['bidForm'] == 'CHCT':
+                review['bidForm'] = 'Chào hàng cạnh tranh'
+            if review['bidForm'] == 'DTRR':
+                review['bidForm'] = 'Đấu thầu rộng rãi'
+            if review['bidForm'] == 'CHCTRG':
+                review['bidForm'] = 'Chào hàng cạnh tranh rút gọn'
+            if review['bidForm'] == 'CDTRG':
+                review['bidForm'] = 'Chỉ định thầu rút gọn'
+
+        if review['isInternet'] is None:
+            review['isInternet'] = ''
+        if review['isInternet'] == 1:
+            if review['bidForm'] == 'Đấu thầu rộng rãi' or review['bidForm'] == 'DTHC' or review['bidForm'] == 'MSTT':
+                fee = '330,000 VND'
+            elif review['bidForm'] == 'Chào hàng cạnh tranh' or review['bidForm'] == 'Chào hàng cạnh tranh rút gọn':
+                fee = '220,000 VND'
+        elif review['isInternet'] == 0:
+            if review['feeValue'] is None:
+                fee = ''
+            else:
+                fee = str(review['feeValue']) + 'VND'
+
+        if review['notifyNo'] is None:
+            review['notifyNo'] = ''
+
+        if review['publicDate'] is None:
+            review['publicDate'] = '0'
+
+        if review['planNo'] is None:
+            review['planNo'] = ''
+
+        if review['planType'] is None:
+            review['planType'] = ''
+        else:
+            if review['planType'] == 'DTPT':
+                review['planType'] = 'Chi đầu tư phát triển'
+            elif review['planType'] == 'TX':
+                review['planType'] = 'Chi thường xuyên'
+
+        if review['planName'] is None:
+            review['planName'] = ''
+
+        if review['bidName'] is None:
+            review['bidName'] = ''
+
+        if review['investorName'] is None:
+            review['investorName'] = ''
+
+        if review['procuringEntityName'] is None:
+            review['procuringEntityName'] = ''
+
+        if review['capitalDetail'] is None:
+            review['capitalDetail'] = ''
+
+        if review['investField'] is None:
+            review['investField'] = ''
+
+        if review['bidForm'] is None:
+            review['bidForm'] = ''
+        else:
+            if review['bidForm'] == 'CHCT':
+                review['bidForm'] = 'Chào hàng cạnh tranh'
+            if review['bidForm'] == 'DTRR':
+                review['bidForm'] = 'Đấu thầu rộng rãi'
+            if review['bidForm'] == 'CHCTRG':
+                review['bidForm'] = 'Chào hàng cạnh tranh rút gọn'
+            if review['bidForm'] == 'CDTRG':
+                review['bidForm'] = 'Chỉ định thầu rút gọn'
+
+        if review['isDomestic'] is None:
+            review['isDomestic'] = ''
+        else:
+            if review['isDomestic'] == 1:
+                review['isDomestic'] = 'Trong nước'
+            elif review['isDomestic'] == 0:
+                review['isDomestic'] = 'Quốc tế'
+
+        if review['bidMode'] is None:
+            review['bidMode'] = ''
+        else:
+            if review['bidMode'] == '1_MTHS':
+                review['bidMode'] = 'Một giai đoạn một túi hồ sơ'
+            elif review['bidMode'] == '1_HTHS':
+                review['bidMode'] = 'Một giai đoạn hai túi hồ sơ'
+
+        if review['isInternet'] is None:
+            review['isInternet'] = ''
+        else:
+            if review['isInternet'] == 1:
+                review['isInternet'] = 'Qua mạng'
+            elif review['isInternet'] == 0:
+                review['isInternet'] = 'Không qua mạng'
+
+        if review['issueLocation'] is None:
+            review['issueLocation'] = ''
+
+        if review['receiveLocation'] is None:
+            review['receiveLocation'] = ''
+
+        if review['bidCloseDate'] is None:
+            review['bidCloseDate'] = ''
+
+        if review['bidOpenDate'] is None:
+            review['bidOpenDate'] = ''
+
+        if review['bidOpenLocation'] is None:
+            review['bidOpenLocation'] = ''
+
+        if review['bidValidityPeriod'] is None:
+            review['bidValidityPeriod'] = ''
+
+        if review['bidValidityPeriodUnit'] is None:
+            review['bidValidityPeriodUnit'] = ''
+        x = str(review['bidValidityPeriod']) + ' ' + str(review['bidValidityPeriodUnit'])
+
+        if json_data['bidInvContractorOfflineDTO'] is not None:
+            if json_data['bidInvContractorOfflineDTO']['decisionNo'] is None:
+                decisionNo = ''
+            else:
+                decisionNo = json_data['bidInvContractorOfflineDTO']['decisionNo']
+
+            if json_data['bidInvContractorOfflineDTO']['decisionDate'] is None:
+                decisionDate = ''
+            else:
+                decisionDate = json_data['bidInvContractorOfflineDTO']['decisionDate']
+
+            if json_data['bidInvContractorOfflineDTO']['decisionAgency'] is None:
+                decisionAgency = ''
+            else:
+                decisionAgency = json_data['bidInvContractorOfflineDTO']['decisionAgency']
+
+            if json_data['bidInvContractorOfflineDTO']['decisionFileId'] is None:
+                decisionFileId = ''
+                link1 = ''
+            else:
+                decisionFileId = json_data['bidInvContractorOfflineDTO']['decisionFileId']
+                link1 = 'http://localhost:1234/api/download/file/browser/public?fileId=' + decisionFileId
+        else:
+            decisionNo = ''
+            decisionDate = ''
+            decisionAgency = ''
+            decisionFileId = ''
+            link1 = ''
+
+        if review['id'] is None:
+            review['id'] = ''
+            link2 = ''
+        else:
+            link2 = 'https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=' + review['id']
+
+        if review['bidPrice'] is None:
+            review['bidPrice'] = ''
+        if review2['bidoBidroundMngViewDTO'] is not None:
+            if review2['bidoBidroundMngViewDTO']['successBidOpenDate'] is None:
+                bien = ''
+            else:
+                bien = review2['bidoBidroundMngViewDTO']['successBidOpenDate']
+            if review2['bidoBidroundMngViewDTO']['countContractor'] is not None:
+                count = review2['bidoBidroundMngViewDTO']['countContractor']
+        else:
+            bien = ''
+
+        if review['investField'] == "HH":
+            review['investField'] = "Hàng hóa"
+        elif review['investField'] == "PTV":
+            review['investField'] = "Phi tư vấn"
+        elif review['investField'] == "TV":
+            review['investField'] = "Tư vấn"
+        elif review['investField'] == "XL":
+            review['investField'] = "Xây lắp"
+
+        details.extend([
+            review['notifyNo'],#0
+            review['publicDate'],#1
+            review["notifyVersion"],#2
+            review['planNo'],#3
+            review['planType'],#4
+            review['planName'],#5
+            review['bidName'],#6
+            review['investorName'],#7
+            review['procuringEntityName'],#8
+            review['capitalDetail'],#9
+            review['investField'],#10
+            review['bidForm'],#11
+            v,#12
+            review['isDomestic'],#13
+            review['bidMode'],#14
+            a,#15
+            review['isInternet'],#16
+            review['issueLocation'],#17
+            fee,#18
+            review['receiveLocation'],#19
+            b,#20
+            review['bidCloseDate'],#21
+            review['bidOpenDate'],#22
+            review['bidOpenLocation'],#23
+            str(review['bidValidityPeriod']) + str(review['bidValidityPeriodUnit']),#24
+            decisionNo,#25
+            decisionDate,#26
+            decisionAgency,#27
+            link1,#28
+            link2,#29
+            review['bidPrice'],#30
+            dem,#31
+            bien,#32
+            nhap1,#33
+            datesucces,#34
+            ])
+        
+        bidType = upABN_db.bid_type(review['investField'])
+        bidMethod = upABN_db.bid_method(review['isInternet'])
+        crea_at = upABN_db.timeUpd()
+        tim_open = upABN_db.time_close(review['bidOpenDate'])
+
+        with open('' + folder_path1 + '/DXT.csv', 'a', encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(details)
+
+        if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
+
+            if details[10] == 'Tư vấn' or details[10] == 'TV':
+                
+                if mode == 'dsntdkt':
+
+                    news_id = upABN_db.upDataDB_1_DXT_TV(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
+
+                    open_result_status = 'complete_gd_hskt'
+                    upABN_db.upDataDB_DXT_TV(tim_open, news_id,open_result_status)
+                
+                elif mode =='kqmt':
+
+                    news_id = upABN_db.upDataDB_1_DXT_TV(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
+                    
+                    open_result_status = 'open_hskt_complete'
+                    upABN_db.upDataDB_DXT_TV(tim_open, news_id,open_result_status)
+
+                    upABNDetail_db.upData_DXT_TV(details, news_id)
+
+                    upABO_db.upDataDB_TV(details, news_id)
+
+            else:
+                news_id = upABN_db.upDataDB_1_DXT(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
+                
+                upABN_db.upDataDB_DXT(tim_open, news_id)
+
+                upABNDetail_db.upData_DXT(details, news_id)
+
+                upABO_db.upDataDB(details, news_id)
+
+        details.clear()
+        return news_id
+
+
+    except requests.ReadTimeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path1 + "/log.txt", "a")
+        h = "{}".format(code)
+        j = "{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: " + h + ', ma: ' + j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.exceptions.ConnectionError:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path1 + "/log.txt", "a")
+        h = "{}".format(code)
+        j = "{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: " + h + ', ma: ' + j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.Timeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path1 + "/log.txt", "a")
+        h = "{}".format(code)
+        j = "{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: " + h + ', ma: ' + j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except Exception as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path1 + "/log.txt", "a")
+        h = "{}".format(code)
+        j = "{}".format(notify_no)
+        f.write("Ho so TBMT DXT bi loi khong lay duoc du lieu: " + h + ', ma: ' + j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+    return 'false'
+
+
+def CrawlDetail_DT_DXT_TV_2(code, session1, codes, folder_path1, notify_no):
+    cookies = {
+        'COOKIE_SUPPORT': 'true',
+        'GUEST_LANGUAGE_ID': 'vi_VN',
+        '_ga': 'GA1.1.2001033887.1675655198',
+        'df5f782085f475fb47cf8ea13597bc51': 'b4ea14c8fd0889330ffb706942522708',
+        '40e12b6a56cf7542c4f2bdc7816f154a': 'e9b4751a7a0ab8ff3c186dc483234702',
+        '_ga_19996Z37EE': 'deleted',
+        '_ga_19996Z37EE': 'deleted',
+        '5321a273c51a75133e0fb1cd75e32e27': '90d57e96398dec0a2d505d16e8dab718',
+        'JSESSIONID': 'j42sgmGH7hD0CrMTwBqHFE7zrzf6v-YAYv0pq7r4.dc_app1_02',
+        'LFR_SESSION_STATE_20103': '1678953886960',
+        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2245525d5f4f58455e445a4a4217de',
+        '_ga_19996Z37EE': 'GS1.1.1678952934.12.1.1678954032.0.0.0',
+        'citrix_ns_id': 'AAY76skSZDvmstQAAAAAADuFeyfrzB16Q6f2O1xwPpu7H2EZwZrlhyq0uv0rs0RgOw==vdESZA==FJrG_ayohQqdZRWrr4alrzqYQOU=',
+    }
+
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/json',
+        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.2001033887.1675655198; df5f782085f475fb47cf8ea13597bc51=b4ea14c8fd0889330ffb706942522708; 40e12b6a56cf7542c4f2bdc7816f154a=e9b4751a7a0ab8ff3c186dc483234702; _ga_19996Z37EE=deleted; _ga_19996Z37EE=deleted; 5321a273c51a75133e0fb1cd75e32e27=90d57e96398dec0a2d505d16e8dab718; JSESSIONID=j42sgmGH7hD0CrMTwBqHFE7zrzf6v-YAYv0pq7r4.dc_app1_02; LFR_SESSION_STATE_20103=1678953886960; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2245525d5f4f58455e445a4a4217de; _ga_19996Z37EE=GS1.1.1678952934.12.1.1678954032.0.0.0; citrix_ns_id=AAY76skSZDvmstQAAAAAADuFeyfrzB16Q6f2O1xwPpu7H2EZwZrlhyq0uv0rs0RgOw==vdESZA==FJrG_ayohQqdZRWrr4alrzqYQOU=',
+        'Origin': 'https://muasamcong.mpi.gov.vn',
+        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=detail&type=es-notify-contractor&stepCode=notify-contractor-step-2-kqmt&id=9506398d-3028-4735-9d7b-6a9b41f9540b&notifyId=9506398d-3028-4735-9d7b-6a9b41f9540b&inputResultId=undefined&bidOpenId=6207a849-263c-421d-a328-15cd627578d5&techReqId=undefined&bidPreNotifyResultId=undefined&bidPreOpenId=undefined&processApply=KHAC&bidMode=1_MTHS&notifyNo=IB2300037374&planNo=PL2300024675&pno=undefined',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 OPR/96.0.0.0',
+        'sec-ch-ua': '"Not=A?Brand";v="8", "Chromium";v="110", "Opera GX";v="96"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+    }
+    try:
+        i = random.randrange(1,10)
+        time.sleep(i)
+        session = session1
+        data = '{"id":"' + code + '"}'
+        response = session.post(
+            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/expose/kqmt/bid-notify-contractor-out/get-by-id',
+            cookies=cookies,
+            headers=headers,
+            data=data,
+            allow_redirects=False,
+            verify=False,
+            timeout=30,
+        )
+        json_data = response.json()
+        review = json_data
+        nhap1 = []
+        nhap1.clear()
+        dem = 0
+        data_dump = json.dumps(json_data)
+        datesucces = ''
+        if review is not None:
+            if data_dump.find('bidoBidroundMngViewDTO') != -1:
+                if review['bidoBidroundMngViewDTO'] is not None:
+                    if review['bidoBidroundMngViewDTO']["successBidOpenDate"] is not None:
+                        datesucces = review['bidoBidroundMngViewDTO']["successBidOpenDate"]
+
+            if review['bidSubmissionByContractorViewResponse'] is not None:
+                if review['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is not None:
+                    for nhathau in review['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList']:
+                        if nhathau['contractorCode'] is None:
+                            nhathau['contractorCode'] = ''
+
+                        if nhathau['contractorName'] is None:
+                            nhathau['contractorName'] = ''
+
+                        if nhathau['bidPrice'] is None:
+                            nhathau['bidPrice'] = ''
+
+                        if nhathau['alternativeTech'] is None:
+                            nhathau['alternativeTech'] = ''
+
+                        if nhathau['bidFinalPrice'] is None:
+                            nhathau['bidFinalPrice'] = ''
+
+                        if nhathau['bidValidityNum'] is None:
+                            nhathau['bidValidityNum'] = ''
+
+                        if nhathau['bidGuarantee'] is None:
+                            nhathau['bidGuarantee'] = ''
+
+                        if nhathau['bidGuaranteeValidity'] is None:
+                            nhathau['bidGuaranteeValidity'] = ''
+
+                        if nhathau['contractPeriodDT'] is None:
+                            nhathau['contractPeriodDT'] = ''
+
+                        if nhathau['contractPeriodDTUnit'] is None:
+                            nhathau['contractPeriodDTUnit'] = ''
+                
+                        nhap1.append([nhathau['contractorCode'],#0
+                                      nhathau['contractorName'],#1
+                                      nhathau['bidPrice'],#2
+                                      nhathau['alternativeTech'],#3
+                                      nhathau['bidFinalPrice'],#4
+                                      nhathau['bidValidityNum'],#5
+                                      nhathau['bidGuarantee'],#6
+                                      nhathau['bidGuaranteeValidity'],#7
+                                      str(nhathau['contractPeriodDT']) + nhathau['contractPeriodDTUnit']#8
+                                      ])
+                        dem = dem + 1
+
+        return nhap1, dem, datesucces
+
+    except requests.ReadTimeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path1 + "/log.txt", "a")
+        h = "{}".format(code)
+        j = "{}".format(notify_no)
+        f.write("Ho so TBMT DXT 2 bi loi khong lay duoc du lieu: " + h + ', ma: ' + j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.exceptions.ConnectionError:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path1 + "/log.txt", "a")
+        h = "{}".format(code)
+        j = "{}".format(notify_no)
+        f.write("Ho so TBMT DXT 2 bi loi khong lay duoc du lieu: " + h + ', ma: ' + j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.Timeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path1 + "/log.txt", "a")
+        h = "{}".format(code)
+        j = "{}".format(notify_no)
+        f.write("Ho so TBMT DXT 2 bi loi khong lay duoc du lieu: " + h + ', ma: ' + j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except Exception as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path1 + "/log.txt", "a")
+        h = "{}".format(code)
+        j = "{}".format(notify_no)
+        f.write("Ho so TBMT DXT 2 bi loi khong lay duoc du lieu: " + h + ', ma: ' + j)
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+    return
+
+def CrawlDetail_DT_DXT_TV_DSNTDKT(code,details,session1,codes,folder_path1,notify_no,mode):
     
     cookies = {
         'COOKIE_SUPPORT': 'true',
@@ -4332,7 +5219,7 @@ def CrawlDetail_DT_DXT_TV_DSNTDKT(code,details,session1,codes,folder_path1,notif
 
     
     try:
-        news_id = CrawlDetail_DT_DXT(code,details,session1,codes,folder_path1,notify_no,mode='dsntdkt')
+        news_id = CrawlDetail_DT_DXT_TV_KQMT(code,details,session1,codes,folder_path1,notify_no,mode)
         if news_id == 'false':
             news_id = 0
 
@@ -4727,7 +5614,7 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
         nhap2 = [0]
         nhap2.clear()
         nhap2, decisionCNTTT, listHangHoa = CrawDetail_DT_CNTTT_2(inputResultId=code2, session1=session1, folder_path1=folder_path1, nhap2=nhap2)
-        print("111222")
+
         # Request theo id trong list_TBMT_CDT de lay cac thong tin cho vao CT_TBMT_CDT
         i = random.randrange(1,10)
         time.sleep(i)
@@ -4957,7 +5844,7 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
         if review1['bidPrice'] is None:
             review1['bidPrice'] = 0
         lienDanh = LienDanh.liendanh()
-        print(listHangHoa)
+       
         details.extend([review1['notifyNo'],
                         review1['publicDate'],
                         review1["notifyVersion"],  # 2
@@ -5014,7 +5901,7 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
             upABNDetail_db.upData_CNTTT(details, news_id)
             upABO_result_complete_gd_hsdt.upData(details, news_id, 1)
             upABRGoods_db.upData_CNTTT(listHangHoa, news_id)
-            print(1)
+           
 
         with open('' + folder_path1 + '/CNTTT.csv', 'a', encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -5335,7 +6222,7 @@ def CrawDetail_DT_CNTTT_2(inputResultId, session1, folder_path1, nhap2):
 
 
 
-        print(review3)
+      
         return nhap2,  review3['bideContractorInputResultDTO']['decisionDate'], crawlDetail_HangHoa_CNTTT(review3)
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
@@ -6809,7 +7696,7 @@ try:
 
     thread_TinTucDongThau = 15
 
-    thread_upData = 0
+    thread_upData = 1
 
     thread_changeData = 0
 
@@ -6821,6 +7708,7 @@ try:
     dem_BMT = 0
     dem_DT = 0
     dem_upData = 0
+    time_start = datetime.now()
 
     for i in range(totalThread):
         a = i + 1
@@ -6843,11 +7731,13 @@ try:
             dem_DT = dem_DT + 1
 
         elif i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau - 1 and i <= totalThread - 1:
-            thread = MyThread(i, "thread" + b, thread_BenMoiThau, 'upData', dem_upData, thread_upData)
+            thread = MyThread(i, "thread" + b, thread_upData, 'upData', dem_upData, thread_upData)
             dem_upData = dem_upData + 1
-
         threads.append(thread)
         thread.start()
+
+    for t in threads:
+        t.join()
 
 except Exception as err:
     print(f"{type(err).__name__} was raised: {err}")
@@ -6855,3 +7745,4 @@ except Exception as err:
     f.write("Chuong trinh bi loi")
     f.write('\n')
     f.close()
+
