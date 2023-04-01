@@ -20,6 +20,7 @@ import upFileDinhKemHSMT
 import upABO_db
 import upABO_result_complete_gd_hsdt
 import upABRGoods_db
+import up_ABN_joint_ventures_db
 from upABNFiles_db import fileDangTai as fileDangTaidb
 
 global fileDangTai
@@ -4216,27 +4217,20 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
         with open('' + folder_path1 + '/DXT.csv', 'a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)
-
         if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
 
             if details[10] == 'Tư vấn' or details[10] == 'TV':
 
                 if mode == 'dsntdkt':
-
                     news_id = upABN_db.upDataDB_1_DXT_TV(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
-
                     open_result_status = 'complete_gd_hskt'
                     upABN_db.upDataDB_DXT_TV(tim_open, news_id,open_result_status)
-                
-                elif mode =='kqmt':
 
+                elif mode =='kqmt':
                     news_id = upABN_db.upDataDB_1_DXT_TV(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
-                    
                     open_result_status = 'open_hskt_complete'
                     upABN_db.upDataDB_DXT_TV(tim_open, news_id,open_result_status)
-
                     upABNDetail_db.upData_DXT_TV(details, news_id)
-
                     upABO_db.upDataDB_TV(details, news_id)
 
             else:
@@ -4247,7 +4241,6 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
                 upABNDetail_db.upData_DXT(details, news_id)
 
                 upABO_db.upDataDB(details, news_id)
-
         details.clear()
         return news_id
 
@@ -5914,6 +5907,7 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
             # print(f"ListHH ---- {listHangHoa}")
             if listHangHoa != []:
                 upABRGoods_db.upData_CNTTT(listHangHoa, news_id)
+            up_ABN_joint_ventures_db.upData_CNTTT(listLienDanh, news_id, 8)
             # print(1)
 
         with open('' + folder_path1 + '/CNTTT.csv', 'a', encoding="utf-8") as f:
