@@ -7,6 +7,8 @@ import random
 import time
 import os
 import json
+
+import TBMST
 import connectdb
 from unidecode import unidecode
 from datetime import datetime, timedelta
@@ -20,6 +22,7 @@ import upFileDinhKemHSMT
 import upABO_db
 import upABO_result_complete_gd_hsdt
 import upABRGoods_db
+import up_ABN_joint_ventures_db
 from upABNFiles_db import fileDangTai as fileDangTaidb
 
 global fileDangTai
@@ -115,14 +118,14 @@ class MyThread(threading.Thread):
         if (self.typeOfThread == 'NT'):
             self.totalPageNumber = SoTrangNT
 
+        elif (self.typeOfThread == "HSMT"):
+            self.totalPageNumber = SoTrangHSMT
 
         elif self.typeOfThread == 'BMT':
             self.totalPageNumber = SoTrangBMT
 
-
         elif self.typeOfThread == 'TT':
             self.totalPageNumber = SoTrangTT
-
 
         elif self.typeOfThread == 'DT':
             self.totalPageNumber = SoTrangDT
@@ -228,6 +231,9 @@ class MyThread(threading.Thread):
                     CrawlMaBenMoiThau(pageNumber=self.pageNumber, codes=self.codes, details=self.details,
                                       session1=self.session, folder_path1=self.folder_path1)
 
+                elif self.typeOfThread == "HSMT":
+                    TBMST.MaHSMT(page_number=SoTrangHSMT)
+
                 elif self.typeOfThread == 'TT':
 
                     CrawlMaTinTuc(pageNumber=self.pageNumber, codes=self.codes, details=self.details,
@@ -249,7 +255,53 @@ class MyThread(threading.Thread):
         
                     
 
-def update_pccc_news_files(media_id, file_name_for_user, url, code_file,code):
+        self.step = step
+
+        self.typeOfThread = typeOfThread
+
+        # time sleep of each thread
+        self.i = 0
+
+        self.details = [0]
+
+        self.codes = [0]
+
+        self.session = requests.Session()
+        self.adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20,max_retries=3)
+        self.session.mount('http://', self.adapter)
+        self.session.mount('https://', self.adapter)
+
+        if len(list_upFile) >= int(self.threadID):
+            if list_upFile != []:
+                self.list = list_upFile1[int(self.threadID)]
+                self.list_upFile2 = self.list[0]
+                self.code_file = self.list[1]
+            else:
+                self.list = []
+                self.list_upFile2 = ''
+                self.code_file = 0
+        else:
+            self.list = []
+            self.list_upFile2 = ''
+            self.code_file = 0
+        
+    def run(self):
+        print("Starting upFile" + self.name)
+        while True:
+            if self.list != []:
+                del list_upFile[self.threadID]
+                self.media_id, self.file_name_for_user, self.url = up_pccc_app_medias(self.list_upFile2)
+                update_pccc_news_files(self.media_id, self.file_name_for_user, self.url, self.code_file)
+                if len(list_upFile) >= int(self.threadID) :
+                    self.list = self.list_upFile1[int(self.threadID)]
+                    self.list_upFile2 = self.list[0]
+                    self.code_file = self.list[1]
+                else:
+                    self.list = []
+                    self.list_upFile2 = ''
+                    self.code_file = 0
+
+def update_pccc_news_files(media_id, file_name_for_user, url, code_file):
     conn = connectdb.connect()
     cur = conn.cursor()
     sql = 'SELECT * FROM pccc_app_bidding_news_files WHERE file_name = %s ORDER BY created_at DESC'
@@ -858,6 +910,99 @@ def CrawlDetailNhaThau(code, details, session1, codes, folder_path1):
 
     return
 
+def SoTrangHoSoMoiThau(startDay, endDay):
+    cookies = {
+        'COOKIE_SUPPORT': 'true',
+        'GUEST_LANGUAGE_ID': 'vi_VN',
+        '_ga': 'GA1.1.1974937140.1679213148',
+        'LFR_SESSION_STATE_20103': '1680925259040',
+        'JSESSIONID': '0iPC8rXywShC2fplUIKfoRlyDjKJcJ0NMCTB8xC4.dc_app1_02',
+        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2245525d5f4f58455e445a4a4217de',
+        '_ga_19996Z37EE': 'GS1.1.1680927313.28.1.1680927317.0.0.0',
+        'citrix_ns_id': 'AAY7TOowZDsrdP0AAAAAADuFeyfrzB16Q6f2O1xwPpu7H2EZwZrlhyq0uv0rs0RgOw==2e0wZA==YFeSGD4PlZe1jwr0RckYrwYX1TM=',
+    }
+
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/json',
+        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.1974937140.1679213148; LFR_SESSION_STATE_20103=1680925259040; JSESSIONID=0iPC8rXywShC2fplUIKfoRlyDjKJcJ0NMCTB8xC4.dc_app1_02; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2245525d5f4f58455e445a4a4217de; _ga_19996Z37EE=GS1.1.1680927313.28.1.1680927317.0.0.0; citrix_ns_id=AAY7TOowZDsrdP0AAAAAADuFeyfrzB16Q6f2O1xwPpu7H2EZwZrlhyq0uv0rs0RgOw==2e0wZA==YFeSGD4PlZe1jwr0RckYrwYX1TM=',
+        'Origin': 'https://muasamcong.mpi.gov.vn',
+        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=index&indexSelect=null',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+        'sec-ch-ua': '"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+    }
+
+    totalPageNumber = 0
+
+    try:
+        data = '{"pageSize":8,"pageNumber":"1","query":[{"index":"es-contractor-selection","matchType":"all","matchFields":["notifyNo","bidName"],"filters":[{"fieldName":"type","searchType":"in","fieldValues":["es-pre-notify-contractor"]},{"fieldName":"investField","searchType":"not_in","fieldValues":["TV"]},{"fieldName":"isInternet","searchType":"in","fieldValues":[1]}]}]}'
+        response = requests.post(
+           'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/smart/search',
+            cookies=cookies,
+            headers=headers,
+            data=data,
+            allow_redirects=False,
+            verify=False,
+        )
+        json_data = response.json()
+        reviews = json_data
+        totalPageNumber = reviews['page']['totalPages']
+
+    except requests.ReadTimeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path + "/log.txt", "a")
+        f.write("Khong lay duoc so trang ben moi thau")
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.exceptions.ConnectionError:
+        f = open('' + folder_path + "/log.txt", "a")
+        f.write("Khong lay duoc so trang ben moi thau")
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.Timeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path + "/log.txt", "a")
+        f.write("Khong lay duoc so trang ben moi thau")
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except Exception as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path + "/log.txt", "a")
+        f.write("Khong lay duoc so trang ben moi thau")
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    return totalPageNumber
 
 def SoTrangBenMoiThau(startDay, endDay):
     cookies = {
@@ -3914,7 +4059,7 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
                     datesucces = review2['bidoBidroundMngViewDTO']["successBidOpenDate"]
 
             if review2['bidSubmissionByContractorViewResponse'] is None:
-                nhap1, dem1, datesucces = CrawlDetail_DT_DXT_2(code=code, session1=session1, codes=codes, folder_path1=folder_path1, notify_no=notify_no)
+                nhap1, dem1, datesucces, listLienDanh, listLienDanhChinh = CrawlDetail_DT_DXT_2(code=code, session1=session1, codes=codes, folder_path1=folder_path1, notify_no=notify_no)
 
             else:
                 if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is not None:
@@ -4244,6 +4389,8 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
             bien,#32
             nhap1,#33
             datesucces,#34
+            listLienDanh,
+            listLienDanhChinh
             ])
         
         bidType = upABN_db.bid_type(review['investField'])
@@ -4254,27 +4401,20 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
         with open('' + folder_path1 + '/DXT.csv', 'a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)
-
         if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
 
             if details[10] == 'Tư vấn' or details[10] == 'TV':
 
                 if mode == 'dsntdkt':
-
                     news_id = upABN_db.upDataDB_1_DXT_TV(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
-
                     open_result_status = 'complete_gd_hskt'
                     upABN_db.upDataDB_DXT_TV(tim_open, news_id,open_result_status)
-                
-                elif mode =='kqmt':
 
+                elif mode =='kqmt':
                     news_id = upABN_db.upDataDB_1_DXT_TV(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
-                    
                     open_result_status = 'open_hskt_complete'
                     upABN_db.upDataDB_DXT_TV(tim_open, news_id,open_result_status)
-
                     upABNDetail_db.upData_DXT_TV(details, news_id)
-
                     upABO_db.upDataDB_TV(details, news_id)
 
             else:
@@ -4285,7 +4425,6 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
                 upABNDetail_db.upData_DXT(details, news_id)
 
                 upABO_db.upDataDB(details, news_id)
-
         details.clear()
         return news_id
 
@@ -4452,8 +4591,8 @@ def CrawlDetail_DT_DXT_2(code, session1, codes, folder_path1, notify_no):
                                       str(nhathau['contractPeriodDT']) + nhathau['contractPeriodDTUnit']#8
                                       ])
                         dem = dem + 1
-
-        return nhap1, dem, datesucces
+        liendanh, liendanhchinh = LienDanh.liendanh_DXT(review)
+        return nhap1, dem, datesucces, liendanh, liendanhchinh
 
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
@@ -4637,7 +4776,7 @@ def CrawlDetail_DT_DXT_TV_KQMT(code,details,session1,codes,folder_path1,notify_n
                     datesucces = review2['bidoBidroundMngViewDTO']["successBidOpenDate"]
 
             if review2['bidSubmissionByContractorViewResponse'] is None:
-                nhap1, dem1, datesucces = CrawlDetail_DT_DXT_TV_2(code=code, session1=session1, codes=codes,folder_path1=folder_path1, notify_no=notify_no)
+                nhap1, dem1, datesucces, listLienDanh, listLienDanhChinh = CrawlDetail_DT_DXT_TV_2(code=code, session1=session1, codes=codes,folder_path1=folder_path1, notify_no=notify_no)
 
             else:
                 if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is not None:
@@ -4967,6 +5106,8 @@ def CrawlDetail_DT_DXT_TV_KQMT(code,details,session1,codes,folder_path1,notify_n
             bien,#32
             nhap1,#33
             datesucces,#34
+            listLienDanh,
+            listLienDanhChinh
             ])
         
         bidType = upABN_db.bid_type(review['investField'])
@@ -5175,8 +5316,9 @@ def CrawlDetail_DT_DXT_TV_2(code, session1, codes, folder_path1, notify_no):
                                       str(nhathau['contractPeriodDT']) + nhathau['contractPeriodDTUnit']#8
                                       ])
                         dem = dem + 1
+        liendanh, liendanhchinh = LienDanh.liendanh_DXT(review)
 
-        return nhap1, dem, datesucces
+        return nhap1, dem, datesucces, liendanh,liendanhchinh
 
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
@@ -5952,6 +6094,7 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
             # print(f"ListHH ---- {listHangHoa}")
             if listHangHoa != []:
                 upABRGoods_db.upData_CNTTT(listHangHoa, news_id)
+            up_ABN_joint_ventures_db.upData_CNTTT(listLienDanh, news_id, 8)
             # print(1)
 
         with open('' + folder_path1 + '/CNTTT.csv', 'a', encoding="utf-8") as f:
@@ -6271,7 +6414,7 @@ def CrawDetail_DT_CNTTT_2(inputResultId, session1, folder_path1, nhap2):
                     [nhathau['orgCode'], nhathau['orgFullname'], nhathau['lotFinalPrice'], nhathau['bidWiningPrice'],
                      str(nhathau['cperiod']) + nhathau['cperiodUnit']])
 
-        return nhap2,  review3['bideContractorInputResultDTO']['decisionDate'], crawlDetail_HangHoa_CNTTT(review3), LienDanh.liendanh(review3)
+        return nhap2,  review3['bideContractorInputResultDTO']['decisionDate'], crawlDetail_HangHoa_CNTTT(review3), LienDanh.liendanh2(review3)
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
         f = open('' + folder_path1 + "/log.txt", "a")
@@ -7724,6 +7867,7 @@ SoTrangNT = SoTrangNhaThau(startDay, endDay)
 SoTrangBMT = SoTrangBenMoiThau(startDay, endDay)
 SoTrangTT = SoTrangTinTuc(startDay, endDay)
 SoTrangDT = SoTrangTinTucDongThau(startDay, endDay)
+SoTrangHSMT = SoTrangHoSoMoiThau(startDay, endDay)
 
 # main
 try:
@@ -7747,15 +7891,16 @@ try:
 
     thread_changeData = 0
 
-    thread_TBMoiSoTuyen = 10
+    thread_HSMT = 1
 
-    totalThread = thread_upData + thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau + thread_TBMoiSoTuyen
+    totalThread = thread_upData + thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau +thread_HSMT
 
     threads = []
     dem_TT = 0
     dem_NT = 0
     dem_BMT = 0
     dem_DT = 0
+    dem_HSMT = 0
     dem_TBMoiSoTuyen = 0
     dem_upData = 0
     time_start = datetime.now()
@@ -7780,7 +7925,12 @@ try:
             thread = MyThread(i, "thread" + b, thread_TinTucDongThau, 'DT', dem_DT, thread_TinTucDongThau,list_upFile)
             dem_DT = dem_DT + 1
 
-        elif i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau - 1 and i <= totalThread - 1:
+        elif (i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau - 1) and(
+                i <= thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau + thread_HSMT - 1):
+            thread = MyThread(i, "thread" + b, thread_HSMT, 'HSMT', dem_HSMT, thread_HSMT)
+            dem_HSMT = dem_HSMT + 1
+
+        elif i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau + thread_HSMT - 1 and i <= totalThread - 1:
             thread = MyThread(i, "thread" + b, thread_upData, 'upData', dem_upData, thread_upData,list_upFile)
             dem_upData = dem_upData + 1
 

@@ -6,7 +6,7 @@ import datetime
 def connect():
     conn = mariadb.connect(
         user="root",
-        password="Nmd021200.",
+        password="123123",
         host="127.0.0.1",
         port=3306,
         database="test"
@@ -107,6 +107,17 @@ def upDataDB_1_DXT(type_id, bid_type, bid_method, aujusted_limited, created_at, 
     mycursor = conn.cursor()
     sql = "INSERT INTO pccc_app_bidding_news (type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no) " \
           f"VALUES ('{type_id}', '{bid_type}', '{bid_method}', '{aujusted_limited}', '{created_at}','{updated_at}', '{bid_number}', '{bid_turn_no}');"
+    mycursor.execute(sql)
+    conn.commit()
+    news_id = mycursor.lastrowid
+    news_id = int(news_id)
+    return news_id
+
+def upDataDB_HSMT(type_id, bid_type, bid_method, aujusted_limited, bid_number, bid_turn_no, time_bid_closing, date_of_approval):
+    conn = connect()
+    mycursor = conn.cursor()
+    sql = "INSERT INTO pccc_app_bidding_news (type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no, time_bid_closing, date_of_approval) " \
+          f"VALUES ('{type_id}', '{bid_type}', '{bid_method}', '{aujusted_limited}', NOW(), NOW(), '{bid_number}', '{bid_turn_no}', '{time_bid_closing}', '{date_of_approval}');"
     mycursor.execute(sql)
     conn.commit()
     news_id = mycursor.lastrowid

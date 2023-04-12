@@ -1,4 +1,5 @@
 import datetime
+import json
 
 import mariadb
 from unidecode import unidecode
@@ -713,8 +714,9 @@ def upData_CNTTT(details, id1):
     value7 = value6
     value8 = ''
     value9 = time_post(details[1])
+    # details[36] = eval(details[36])
     value10 = details[36][0][1]
-
+    # details[35] = eval(details[35])
     conn = connectdb.connect()
     cur = conn.cursor()
     sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
@@ -782,3 +784,221 @@ def upData_CNTTT(details, id1):
         sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}';"
         cur.execute(sql)
         conn.commit()
+
+
+details = ['IB2300047604',
+           '2023-03-23T11:08:38.406',
+           '00',
+           'PL2300036765',
+           'Chi thường xuyên',
+           "Thu gom rác, vận chuyển rác thải sinh hoạt đến điểm tập kết và xử lý rác tạm thời trên địa bàn xã Bàn Giản ( từ ngày 01/04/2023 đến ngày 31/12/2023)",
+           "Thu gom rác, vận chuyển rác thải sinh hoạt đến điểm tập kết và xử lý rác tạm thời trên địa bàn xã Bàn Giản ( từ ngày 01/04/2023 đến ngày 31/12/2023)",
+           "UBND xã Bàn Giản, huyện Lập Thạch",
+           "UBND xã Bàn Giản, huyện Lập Thạch",
+           'Nguồn vốn sự nghiệp môi trường và các nguồn huy động hợp pháp khác',
+           'Phi tư vấn',
+           'Chào hàng cạnh tranh',
+           'TG',
+           'Trong nước',
+           'Một giai đoạn một túi hồ sơ',
+           '272D',
+           'Qua mạng',
+           'https://muasamcong.mpi.gov.vn',
+           "220,000 VND",
+           'https://muasamcong.mpi.gov.vn',
+           "Huyện Lập Thạch, Tỉnh Vĩnh Phúc",
+           '2023-03-30T07:30:00',
+           '2023-03-30T07:30:00',
+           'https://muasamcong.mpi.gov.vn',
+           '60D',
+           5000000,
+           352052000,
+           'Cam kết',
+           '40/QĐ-UBND',
+           '2023-03-15T17:00:00.000+0000',
+           'UBND xã Bàn Giản',
+           "('http://localhost:1234/api/download/file/browser/public?fileId=a51c75e6-4f32-489a-ae1b-a0501eb40e62',)",
+           "('https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode=ALL&id=effad1d2-0857-4ac9-8db5-38f2282c0394',)",
+           1,
+           '2023-03-30T07:40:52',
+           "[['vn2500667324', 'HỢP TÁC XÃ DỊCH VỤ TỔNG HỢP BÀN GIẢN', 351164000, 0, 351164000, 60, 5000000, 90, '272D']]",
+           "[['vn2500667324', 'HỢP TÁC XÃ DỊCH VỤ TỔNG HỢP BÀN GIẢN', 351164000, 351164000, '272D']]",
+           "['effad1d2-0857-4ac9-8db5-38f2282c0394', 'IB2300047604', 'es-notify-contractor', 'notify-contractor-step-4-kqlcnt', 'CNTTT', 'ba7b1d27-657e-43f1-9589-20b73cb68cf1', 1, 'PTV', '00']",
+           '2023-03-31T23:59:59',
+           [None],
+           []]
+
+def upData_HSMT(details, id1):
+    sub_title = "Hồ sơ mời sơ tuyển gói hàng hóa"
+    titles1 = 'Số TBMST'
+
+    titles2 = 'Trạng thái thông báo'
+
+    titles3 = 'Bên mời thầu'
+
+    titles4 = 'Loại thông báo'
+
+    titles5 = 'Tên gói thầu'
+
+    titles6 = 'Tên dự án'
+
+    titles7 = 'Chi tiết nguồn vốn'
+
+    titles8 = 'Thời gian phát hành HSMST'
+
+    titles9 = 'Địa điểm nhận HSDST'
+
+    titles10 = 'Thời điểm mở sơ tuyển'
+
+    titles11 = 'Hình thức nhận HSMST'
+
+    titles12 = 'Địa điểm mở HSDST'
+
+    titles13 = 'Hình thức LCNT'
+
+    titles14 = 'Phương thức LCNT'
+
+    titles15 = 'Nội dung chính gói thầu'
+
+    titles16 = 'Thời gian thực hiện hợp đồng'
+
+    titles17 = 'Làm rõ HSMST'
+
+    key1 = titles1.strip().lower().replace(' ', '-')
+    key1 = unidecode(key1)
+
+    key2 = titles2.strip().lower().replace(' ', '-')
+    key2 = unidecode(key2)
+
+    key3 = titles3.strip().lower().replace(' ', '-')
+    key3 = unidecode(key3)
+
+    key4 = titles4.strip().lower().replace(' ', '-')
+    key4 = unidecode(key4)
+
+    key5 = titles5.strip().lower().replace(' ', '-')
+    key5 = unidecode(key5)
+
+    key6 = titles6.strip().lower().replace(' ', '-')
+    key6 = unidecode(key6)
+
+    key7 = titles7.strip().lower().replace(' ', '-')
+    key7 = unidecode(key7)
+
+    key8 = titles8.strip().lower().replace(' ', '-')
+    key8 = unidecode(key8)
+
+    key9 = titles9.strip().lower().replace(' ', '-')
+    key9 = unidecode(key9)
+
+    key10 = titles10.strip().lower().replace(' ', '-')
+    key10 = unidecode(key10)
+
+    key11 = titles11.strip().lower().replace(' ', '-')
+    key11 = unidecode(key11)
+
+    key12 = titles12.strip().lower().replace(' ', '-')
+    key12 = unidecode(key12)
+
+    key13 = titles13.strip().lower().replace(' ', '-')
+    key13 = unidecode(key13)
+
+    key14 = titles14.strip().lower().replace(' ', '-')
+    key14 = unidecode(key14)
+
+    key15 = titles15.strip().lower().replace(' ', '-')
+    key15 = unidecode(key15)
+
+    key16 = titles16.strip().lower().replace(' ', '-')
+    key16 = unidecode(key16)
+
+    key17 = titles17.strip().lower().replace(' ', '-')
+    key17 = unidecode(key17)
+
+    value1 = f"{details[0]}-{details[2]}"
+
+    if details[2] == 0 or details[2] == '00':
+        value2 = 'Thông báo đăng lần đầu'
+    else:
+        value2 = 'Đã điều chỉnh'
+
+    value3 = details[8]
+
+    value4 = "Thông báo thực"
+
+    value5 = details[5]
+
+    value6 = details[27]
+
+    value7 = details[9]
+
+    value8 = None
+
+    value9 = details[18]
+
+    value10 = None
+
+    value11= details[16]
+
+    value12 = details[21]
+
+    value13 = details[11] + str(" có sơ tuyển ") + details[13]
+
+    value14 = details[14]
+
+    value15 = details[6]
+
+    value16 = ""
+    for i in details[24]:
+        if i.isnumeric(): continue
+        else:
+            if i == "D":
+                value16 = details[15].replace("D", " Ngày")
+            elif i == "M":
+                value16 = details[15].replace("M", " tháng")
+
+    value17 = None
+
+    records = [
+        (key1, sub_title, titles1, value1, id1),
+        (key2, sub_title, titles2, value2, id1),
+        (key3, sub_title, titles3, value3, id1),
+        (key4, sub_title, titles4, value4, id1),
+        (key5, sub_title, titles5, value5, id1),
+        (key6, sub_title, titles6, value6, id1),
+        (key7, sub_title, titles7, value7, id1),
+        (key8, sub_title, titles8, value8, id1),
+        (key9, sub_title, titles9, value9, id1),
+        (key10, sub_title, titles10, value10, id1),
+        (key11, sub_title, titles11, value11, id1),
+        (key12, sub_title, titles12, value12, id1),
+        (key13, sub_title, titles13, value13, id1),
+        (key14, sub_title, titles14, value14, id1),
+        (key15, sub_title, titles15, value15, id1),
+        (key16, sub_title, titles16, value16, id1),
+        (key17, sub_title, titles17, value17, id1),
+    ]
+    conn =connectdb.connect()
+    cur = conn.cursor()
+    sql = "INSERT INTO pccc_app_bidding_news_details(`key`, sub_title, title, value, news_id, type_id, created_at, updated_at) " \
+          f"VALUES (%s, %s, %s, %s, %s, 2, NOW(), NOW());"
+    cur.executemany(sql, records)
+    conn.commit()
+
+    sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
+    val = (value10,)
+    cur.execute(sql, val)
+    a = cur.fetchone()
+    conn.commit()
+    if a is None:
+        myresult = ""
+    else:
+        myresult = a[0]
+
+    if myresult != "":
+        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}';"
+        cur.execute(sql)
+        conn.commit()
+# upData_CNTTT(details, 1841085)
+# upData_DXT_TV(details, 1841085)
+# upData(details, 1841085)
