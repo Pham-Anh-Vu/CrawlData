@@ -26,16 +26,19 @@ global fileDangTai
 fileDangTai = fileDangTaidb
 
 global checkListFileDangTai
+checkListFileDangTai = False
 
 global list_upFile
 list_upFile = []
 
+global running
+running = True
 
 all_objects = muppy.get_objects()
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-yesterday = datetime.now() - timedelta(days=2)
+yesterday = datetime.now() - timedelta(days=1)
 
 yesterday_str = yesterday.strftime('%Y-%m-%d')
 
@@ -71,7 +74,7 @@ with open('./areaType3.csv', newline='\n', encoding='utf-8') as csvfile:
 
 
 class MyThread(threading.Thread):
-    def __init__(self, threadID, name, step, typeOfThread, pageNumberStart, NumberThreadOfThis):
+    def __init__(self, threadID, name, step, typeOfThread, pageNumberStart, NumberThreadOfThis,list_upFile1):
         threading.Thread.__init__(self=self)
 
         self.threadID = threadID
@@ -99,9 +102,11 @@ class MyThread(threading.Thread):
         self.pageNumberStart = pageNumberStart
 
         self.NumberThreadOfThis = NumberThreadOfThis
+        self.list_upFile1 = list_upFile1
 
     def run(self):
-
+        global list_upFile
+        self.list_upFile1 = list_upFile
         print("Starting " + self.name)
 
         self.codes.clear()
@@ -122,7 +127,85 @@ class MyThread(threading.Thread):
         elif self.typeOfThread == 'DT':
             self.totalPageNumber = SoTrangDT
 
-        if self.totalPageNumber >= 1:
+        elif self.typeOfThread =='upData':
+            if len(list_upFile) >= int(self.pageNumberStart):
+                if list_upFile != []:
+                    self.list = self.list_upFile1[int(self.pageNumberStart)]
+                    self.list_upFile2 = self.list[0]
+                    self.code_file = self.list[1]
+                else:
+                    self.list = []
+                    self.list_upFile2 = ''
+                    self.code_file = 0
+            else:
+                self.list = []
+                self.list_upFile2 = ''
+                self.code_file = 0
+
+        if self.typeOfThread == 'upData':
+            global checkListFileDangTai
+            global running
+            countdown = 30
+            while running == True:
+                countdown = countdown - 1
+                while countdown == 1:
+                    time.sleep(1)
+                    countdown == 2
+                    if checkListFileDangTai == True:
+                        if self.list != []:
+                            if len(list_upFile) >= int(self.pageNumberStart)+1 :
+                                try:
+                                    index = list_upFile.index(self.list)
+                                except:
+                                    continue
+                                    
+                                if list_upFile[index] == self.list:
+                                    del list_upFile[index]
+                                else:
+                                    continue
+
+                            self.code,self.check,self.media_id, self.file_name_for_user, self.url = up_pccc_app_medias(self.list_upFile2)
+                            
+                            if self.check == 1:
+                                update_pccc_news_files(self.media_id, self.file_name_for_user, self.url, self.code_file, self.code)
+                                if len(list_upFile) > int(self.pageNumberStart)+1 :
+                                    self.list = self.list_upFile1[int(self.pageNumberStart)]
+                                    self.list_upFile2 = self.list[0]
+                                    self.code_file = self.list[1]
+                                else:
+                                    if len(list_upFile) == 1 and self.threadID == 0:
+                                        self.list = self.list_upFile1[int(self.pageNumberStart)]
+                                        self.list_upFile2 = self.list[0]
+                                        self.code_file = self.list[1]
+
+                                    else:
+                                        self.list = []
+                                        self.list_upFile2 = ''
+                                        self.code_file = 0
+                            else:
+                                if len(list_upFile) > int(self.pageNumberStart)+1 :
+                                    self.list = self.list_upFile1[int(self.pageNumberStart)]
+                                    self.list_upFile2 = self.list[0]
+                                    self.code_file = self.list[1]
+                                else:
+                                    self.list = []
+                                    self.list_upFile2 = ''
+                                    self.code_file = 0
+                        else:
+                            if len(list_upFile) > int(self.pageNumberStart)+1 :
+                                self.list = self.list_upFile1[int(self.pageNumberStart)]
+                                self.list_upFile2 = self.list[0]
+                                self.code_file = self.list[1]
+                            else:
+                                self.list = []
+                                self.list_upFile2 = ''
+                                self.code_file = 0
+
+                    
+                
+                
+
+        elif self.totalPageNumber >= 1 and self.typeOfThread != 'upData':
 
             self.folder_path1 = folder_path
 
@@ -155,8 +238,7 @@ class MyThread(threading.Thread):
                     CrawlMaTinTucDongThau(pageNumber=self.pageNumber, codes=self.codes, details=self.details,
                                           session1=self.session, folder_path1=self.folder_path1)
                 
-                elif self.typeOfThread == 'upData':
-                    main()
+                
 
                 if random.randrange(1, 4) == 2:
                     self.session.close()
@@ -164,83 +246,35 @@ class MyThread(threading.Thread):
 
                 self.pageNumber = self.pageNumber + self.step
 
-class MyThread2(threading.Thread):
-    def __init__(self, threadID, name, step, typeOfThread, list_upFile1):
-        threading.Thread.__init__(self=self)
-
-        self.threadID = threadID
-
-        self.name = name
-
-        self.step = step
-
-        self.typeOfThread = typeOfThread
-
-        # time sleep of each thread
-        self.i = 0
-
-        self.details = [0]
-
-        self.codes = [0]
-
-        self.session = requests.Session()
-        self.adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20,max_retries=3)
-        self.session.mount('http://', self.adapter)
-        self.session.mount('https://', self.adapter)
-
-        if len(list_upFile) >= int(self.threadID):
-            if list_upFile != []:
-                self.list = list_upFile1[int(self.threadID)]
-                self.list_upFile2 = self.list[0]
-                self.code_file = self.list[1]
-            else:
-                self.list = []
-                self.list_upFile2 = ''
-                self.code_file = 0
-        else:
-            self.list = []
-            self.list_upFile2 = ''
-            self.code_file = 0
         
-    def run(self):
-        print("Starting upFile" + self.name)
-        while True:
-            if self.list != []:
-                del list_upFile[self.threadID]
-                self.media_id, self.file_name_for_user, self.url = up_pccc_app_medias(self.list_upFile2)
-                update_pccc_news_files(self.media_id, self.file_name_for_user, self.url, self.code_file)
-                if len(list_upFile) >= int(self.threadID) :
-                    self.list = self.list_upFile1[int(self.threadID)]
-                    self.list_upFile2 = self.list[0]
-                    self.code_file = self.list[1]
-                else:
-                    self.list = []
-                    self.list_upFile2 = ''
-                    self.code_file = 0
+                    
 
-def update_pccc_news_files(media_id, file_name_for_user, url, code_file):
+def update_pccc_news_files(media_id, file_name_for_user, url, code_file,code):
     conn = connectdb.connect()
     cur = conn.cursor()
-    sql = 'SELECT id FROM pccc_app_bidding_news_files WHERE file_name = %s ORDER BY created_at DESC'
-    val = ('File đang tải' +str(code_file),)
+    sql = 'SELECT * FROM pccc_app_bidding_news_files WHERE file_name = %s ORDER BY created_at DESC'
+    file_name = 'ID file đính kèm: ' + str(code)
+    val = (file_name,)
     cur.execute(sql, val)
     myresult = cur.fetchone()
-    if myresult != []:
-        news_files_id = myresult[0]
     
-    sql = 'UPDATE pccc_app_bidding_news_files SET file_name = %s , link_muasamcong = %s , media_id=%s , updated_at = NOW() WHERE `id` = %s'
-    val = (file_name_for_user, url, media_id,news_files_id)
-    cur.execute(sql, val)
-    conn.commit()
+    if myresult is not None:
+        if myresult != []:
+            news_files_id = myresult[0]
+            sql = 'UPDATE pccc_app_bidding_news_files SET file_name = %s , link_muasamcong = %s , media_id=%s , updated_at = NOW() WHERE `id` = %s'
+            val = (file_name_for_user, url, media_id, news_files_id)
+            cur.execute(sql, val)
+            conn.commit()
     
-def upData(details, result, link1, fileDangTai):
+def upData(details, result, link1):
     id1 = details[33][0]
     object_type = 'App\Models\BiddingNewsDetail'
     object_id = int(result)
     record = []
     media_id = None
     record.append([object_type, object_id, 'Quyết định phê duyệt', link1 ,media_id, 1])
-    fileDangTai1 = fileDangTai
+    global checkListFileDangTai
+    global fileDangTai
     for i in details[35]:
         bidform = i[4]
         link = f"https://muasamcong.mpi.gov.vn/egp/contractorfe/viewer?formCode={bidform}&id={id1}"
@@ -254,23 +288,29 @@ def upData(details, result, link1, fileDangTai):
         for z in details[37]:
             if i[5] == z[2]:
                 if z[1] == i[4]:
-                    list_upFile.append([z[0],fileDangTai1])
-                    tuples = (object_type, object_id, 'File đang tải '+str(fileDangTai1), None, None, None)
-                    fileDangTai1 = fileDangTai1 +1
+                    list_upFile.append([z[0],fileDangTai])
+                    
+                    checkListFileDangTai = True
+                    tuples = (object_type, object_id, 'ID file đính kèm: '+z[0], None, None, None)
+                    fileDangTai = fileDangTai +1
                     record.append(tuples)
 
                 else:
                     if z[2] == 'P2':
-                        list_upFile.append([z[0],fileDangTai1])
-                        tuples = (object_type, object_id, 'File đang tải '+str(fileDangTai1), None, None, None)
-                        fileDangTai1 = fileDangTai1 +1
+                        list_upFile.append([z[0],fileDangTai])
+                        
+                        checkListFileDangTai = True
+                        tuples = (object_type, object_id, 'ID file đính kèm: '+z[0], None, None, None)
+                        fileDangTai = fileDangTai +1
                         record.append(tuples)
             else:
                 if z[2]=='C8':
                     if i[4] == 'C8':
-                        list_upFile.append([z[0],fileDangTai1])
-                        tuples = (object_type, object_id, 'File đang tải '+str(fileDangTai1), None, None, None)
-                        fileDangTai1 = fileDangTai1 +1
+                        list_upFile.append([z[0],fileDangTai])
+                        
+                        checkListFileDangTai = True
+                        tuples = (object_type, object_id, 'ID file đính kèm: '+z[0], None, None, None)
+                        fileDangTai = fileDangTai +1
                         record.append(tuples)
             
     conn = connectdb.connect()
@@ -280,36 +320,35 @@ def upData(details, result, link1, fileDangTai):
         cur.execute(sql, recordx)
         conn.commit()
 
-    return fileDangTai1
+    return
 
 
 def up_pccc_app_medias(code):
-    url = 'http://localhost:1234/api/download/file/browser/public?fileId='+code
     """name = 'a.pdf'
     type = 'pdf'
     path = 'a'
     file_name_for_user = 'a.pdf'"""
-    name,type,path, file_name_for_user = upFileDinhKemHSMT.downFileAndUpLoad(url=url)
-    conn = connectdb.connect()
-    cur = conn.cursor()
-    sql= "INSERT INTO pccc_app_medias (name, type, path, created_at, updated_at) VALUES (%s, %s, %s, NOW(), NOW())"
-    val = (name, type, path)
-    cur.execute(sql,val)
-    conn.commit()
-    media_id = cur.lastrowid
-    media_id = int(media_id)
-    return media_id, file_name_for_user, url
+    url = 'http://localhost:1234/api/download/file/browser/public?fileId=' + code
+    check,name,type,path, file_name_for_user = upFileDinhKemHSMT.downFileAndUpLoad(code=code)
+    media_id = 0
 
-def main():
-    numberOfThread = 5
-    threadUpFile = 5
-    threads = []
-    for i in range(numberOfThread):
-        a = i + 1
-        b = str(a)
-        thread = MyThread2(i, "thread" + b, threadUpFile, 'upFile', list_upFile)
-        threads.append(thread)
-        thread.start()
+   
+
+    if check == 0:
+        return code, check, media_id, file_name_for_user, url
+    else:
+        conn = connectdb.connect()
+        cur = conn.cursor()
+        sql= "INSERT INTO pccc_app_medias (name, type, path, created_at, updated_at) VALUES (%s, %s, %s, NOW(), NOW())"
+        val = (name, type, path)
+        cur.execute(sql,val)
+        conn.commit()
+        media_id = cur.lastrowid
+        media_id = int(media_id)
+        check = 1
+        
+        return code, check, media_id, file_name_for_user, url
+    
 
 def SoTrangNhaThau(startDay, endDay):
     cookies = {
@@ -3063,8 +3102,7 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
             if myresult is not None:
                 if myresult != []:
                     result = myresult[0]
-                    global fileDangTai
-                    fileDangTai = upData(details, result, link1,fileDangTai)
+                    upData(details, result, link1)
                     
         with open('' + folder_path1 + '/TBMT_CDT.csv', 'a', encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -7689,7 +7727,6 @@ SoTrangDT = SoTrangTinTucDongThau(startDay, endDay)
 
 # main
 try:
-
     folder_path = './' + startDay + 'to' + endDay + ''
 
     if not os.path.isdir(folder_path):
@@ -7706,17 +7743,20 @@ try:
 
     thread_TinTucDongThau = 15
 
-    thread_upData = 1
+    thread_upData = 10
 
     thread_changeData = 0
 
-    totalThread = thread_upData + thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau
+    thread_TBMoiSoTuyen = 10
+
+    totalThread = thread_upData + thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau + thread_TBMoiSoTuyen
 
     threads = []
     dem_TT = 0
     dem_NT = 0
     dem_BMT = 0
     dem_DT = 0
+    dem_TBMoiSoTuyen = 0
     dem_upData = 0
     time_start = datetime.now()
 
@@ -7724,28 +7764,29 @@ try:
         a = i + 1
         b = str(a)
         if i <= thread_TinTuc - 1:
-            thread = MyThread(i, "thread" + b, thread_TinTuc, 'TT', dem_TT, thread_TinTuc)
+            thread = MyThread(i, "thread" + b, thread_TinTuc, 'TT', dem_TT, thread_TinTuc,list_upFile)
             dem_TT = dem_TT + 1
 
         elif i > thread_TinTuc - 1 and i <= thread_TinTuc + thread_NhaThau - 1:
-            thread = MyThread(i, "thread" + b, thread_NhaThau, 'NT', dem_NT, thread_NhaThau)
+            thread = MyThread(i, "thread" + b, thread_NhaThau, 'NT', dem_NT, thread_NhaThau,list_upFile)
             dem_NT = dem_NT + 1
 
         elif i > thread_TinTuc + thread_NhaThau - 1 and i <= thread_BenMoiThau + thread_TinTuc + thread_NhaThau - 1:
-            thread = MyThread(i, "thread" + b, thread_BenMoiThau, 'BMT', dem_BMT, thread_BenMoiThau)
+            thread = MyThread(i, "thread" + b, thread_BenMoiThau, 'BMT', dem_BMT, thread_BenMoiThau,list_upFile)
             dem_BMT = dem_BMT + 1
 
         elif (i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau - 1) and (
                 i <= thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau - 1):
-            thread = MyThread(i, "thread" + b, thread_TinTucDongThau, 'DT', dem_DT, thread_TinTucDongThau)
+            thread = MyThread(i, "thread" + b, thread_TinTucDongThau, 'DT', dem_DT, thread_TinTucDongThau,list_upFile)
             dem_DT = dem_DT + 1
 
         elif i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau - 1 and i <= totalThread - 1:
-            thread = MyThread(i, "thread" + b, thread_upData, 'upData', dem_upData, thread_upData)
+            thread = MyThread(i, "thread" + b, thread_upData, 'upData', dem_upData, thread_upData,list_upFile)
             dem_upData = dem_upData + 1
+
         threads.append(thread)
         thread.start()
-
+        
     for t in threads:
         t.join()
 

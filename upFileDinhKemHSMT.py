@@ -3,25 +3,45 @@ import os
 import urllib.request
 import cgi
 import urllib.parse
+from urllib.request import urlopen
 
-def downFileAndUpLoad(url):
-    folder_pathz = './download'
-    if not os.path.isdir(folder_pathz):
-        os.mkdir(folder_pathz)
-    # URL of the file to download
+from minio import Minio
+from minio.error import S3Error
 
-    remotefile = urllib.request.urlopen(url)
-    contentdisposition = remotefile.info()['Content-Disposition']
-    _, params = cgi.parse_header(contentdisposition)
-    filename = params["filename"]
-    file_name = urllib.parse.unquote(filename)
-    base, ext= os.path.splitext(file_name)
-    # Tạo tên file mới
-    file_name = base.replace("+", " ")
-    file_name = file_name.split("_")[1] + ext
-    local_file_path = './download/'+file_name
-    file_name_for_user = file_name
-    if os.path.exists(local_file_path):
+
+client = Minio(
+        "storage.rsa.vn:9000",
+        access_key="5nPH7GkDwdE82lGZ",
+        secret_key="z2HRBHivdO13OVGYHQ0x1j4J3qbfCspW",
+        secure= False
+        )
+
+def downFileAndUpLoad(code):
+    url = 'http://localhost:1234/api/download/file/browser/public?fileId='+ code
+    
+    name = ''
+    type = ''
+    path = ''
+    file_name_for_user =''
+    try:
+        folder_pathz = 'C:\\MPI\\EGP-AGENT\\DOWNLOAD\\'
+        if not os.path.isdir(folder_pathz):
+            os.mkdir(folder_pathz)
+        # URL of the file to download
+
+        remotefile = urlopen(url)
+        contentdisposition = remotefile.info()['Content-Disposition']
+        _, params = cgi.parse_header(contentdisposition)
+        filename = params["filename"]
+        file_name = urllib.parse.unquote(filename)
+        base, ext= os.path.splitext(file_name)
+        # Tạo tên file mới
+        file_name = base.replace("+", " ")
+        file_name_a = file_name.split("_")[1] + ext
+        file_name = file_name.split("_")[0]+'-'+file_name.split("_")[1] + ext
+        local_file_path = 'C:\\MPI\\EGP-AGENT\\DOWNLOAD\\'+file_name
+        file_name_for_user = file_name
+        if os.path.exists(local_file_path):
             # Nếu tên file đã tồn tại, thêm số thứ tự vào sau tên file để đổi tên
             i = 1
             new_filename = file_name
@@ -30,48 +50,68 @@ def downFileAndUpLoad(url):
                 base, ext = os.path.splitext(file_name)
                 new_filename = "{}_{}{}".format(base, i, ext)
                 i += 1
-                local_file_path = './download/'+new_filename
+                local_file_path = 'C:\\MPI\\EGP-AGENT\\DOWNLOAD\\'+new_filename
             file_name = new_filename
-            local_file_path = './download/'+file_name
+            local_file_path = 'C:\\MPI\\EGP-AGENT\\DOWNLOAD\\'+file_name
 
-    # Download the file
-    urllib.request.urlretrieve(url, './download/'+file_name)
+        # Wait until the download finishes
+        urllib.request.urlcleanup()
 
-    # Wait until the download finishes
-    urllib.request.urlcleanup()
+        local_file_path = 'C:\\MPI\\EGP-AGENT\\DOWNLOAD\\'+file_name
+        remote_file_path = '/muasamcong/thongbaomoithau/'
+        remote_file_path_name = remote_file_path + file_name
+        
+        found = client.bucket_exists("test")
+        
+        if not found:
+            client.make_bucket("test")
 
-    # Set the FTP server details
-    ftp_server = 'ctd.com.vn'
-    ftp_username = 'test@ctd.com.vn'
-    ftp_password = 'Nmd021200.'
+        file_name, new_file_name = rename_file_if_exists('test',file_name,0,remote_file_path)
 
-    local_file_path = './download/'+file_name
-    remote_file_path = '/muasamcong/thongbaomoithau/'
-    remote_file_path_name = remote_file_path + file_name
-    # Open the FTP connection
-    with ftplib.FTP(ftp_server) as ftp:
-        # Log in to the FTP server
-        ftp.login(user=ftp_username, passwd=ftp_password)
-        ftp.cwd(remote_file_path)
-            # Check if the remote file exists
-        if file_name in ftp.nlst():
-            # If the remote file exists, generate a new filename
-            i = 1
-            while True:
-                new_file_name = '{}_{}{}'.format(os.path.splitext(file_name)[0], i, os.path.splitext(file_name)[1])
-                if new_file_name not in ftp.nlst():
-                    new_file_path = remote_file_path + new_file_name
-                    file_name = new_file_name
-                    remote_file_path_name = new_file_path
-                    break
-                i += 1
+        a = client.put_object(
+            "test", '/muasamcong/thongbaomoithau/'+new_file_name, remotefile, length=-1 ,content_type="application/octet-stream", part_size=10*1024*1024
+            )
 
-        # Open the local file
-        with open(local_file_path, 'rb') as f:
-            # Upload the file to the server
-            ftp.storbinary('STOR {}'.format(os.path.basename(file_name)), f)
-        type = os.path.splitext(file_name)[1].replace('.','')
-        name = file_name
-        path = remote_file_path_name
+        type = os.path.splitext(file_name_a)[1].replace('.','')
+        name = new_file_name
+        path = remote_file_path + new_file_name
         file_name_for_user = 'File đính kèm: '+file_name_for_user
-    return name,type,path, file_name_for_user
+
+        bucket_name = 'test'
+        object_name = '/muasamcong/thongbaomoithau/'+new_file_name
+        file_path = local_file_path
+        object_info = client.stat_object(bucket_name, object_name)
+        check = 1
+
+    except S3Error as exc:
+        check = 0
+        print("error occurred.", exc)
+        pass
+
+    except:
+        check = 0
+        pass
+    
+    return check,name,type,path, file_name_for_user
+
+
+def is_object_exists(bucket_name, object_name):
+    try:
+        client.stat_object(bucket_name, object_name)
+        return True
+    except S3Error as err:
+        # Nếu object không tồn tại
+        return False
+
+# Hàm để đổi tên file nếu file đã tồn tại
+def rename_file_if_exists(bucket_name, file_name, count,path):
+    new_file_name = file_name
+    while is_object_exists(bucket_name, (path+new_file_name)):
+        # Tách tên file và đuôi file
+        name, extension = os.path.splitext(file_name)
+        # Thêm số vào tên file
+        name = name + '-' + str(count)
+        # Ghép lại tên file và đuôi file
+        new_file_name = name + extension
+        count = count + 1 
+    return file_name, new_file_name
