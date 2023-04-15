@@ -90,6 +90,7 @@ def downFileAndUpLoad(code):
 
     except:
         check = 0
+        print(2)
         pass
     
     return check,name,type,path, file_name_for_user

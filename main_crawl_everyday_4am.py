@@ -146,67 +146,81 @@ class MyThread(threading.Thread):
                 self.code_file = 0
 
         if self.typeOfThread == 'upData':
+            running = True
             global checkListFileDangTai
-            global running
-            countdown = 30
+            checkListFileDangTai = True
+            countdown = random.randrange(30,50)
             while running == True:
                 countdown = countdown - 1
                 while countdown == 1:
                     time.sleep(1)
                     countdown == 2
-                    if checkListFileDangTai == True:
-                        if self.list != []:
-                            if len(list_upFile) >= int(self.pageNumberStart)+1 :
-                                try:
-                                    index = list_upFile.index(self.list)
-                                except:
-                                    continue
-                                    
-                                if list_upFile[index] == self.list:
-                                    del list_upFile[index]
-                                else:
-                                    continue
+                    try:
+                        if checkListFileDangTai == True:
+                            print(self.threadID ,len(list_upFile))
+                            if self.list != []:
+                                if len(list_upFile) >= int(self.pageNumberStart)+1 :
+                                    try:
+                                        index = list_upFile.index(self.list)
+                                    except:
+                                        pass
 
-                            self.code,self.check,self.media_id, self.file_name_for_user, self.url = up_pccc_app_medias(self.list_upFile2)
-                            
-                            if self.check == 1:
-                                update_pccc_news_files(self.media_id, self.file_name_for_user, self.url, self.code_file, self.code)
-                                if len(list_upFile) > int(self.pageNumberStart)+1 :
-                                    self.list = self.list_upFile1[int(self.pageNumberStart)]
-                                    self.list_upFile2 = self.list[0]
-                                    self.code_file = self.list[1]
-                                else:
-                                    if len(list_upFile) == 1 and self.threadID == 0:
+                                    if list_upFile[index] == self.list:
+                                        del list_upFile[index]
+                                
+                                self.code,self.check,self.media_id, self.file_name_for_user, self.url = up_pccc_app_medias(self.list_upFile2)
+                                
+                                if self.check == 1:
+                                    update_pccc_news_files(self.media_id, self.file_name_for_user, self.url, self.code_file, self.code)
+                                    if len(list_upFile) > int(self.pageNumberStart)+1 :
                                         self.list = self.list_upFile1[int(self.pageNumberStart)]
                                         self.list_upFile2 = self.list[0]
                                         self.code_file = self.list[1]
+                                    else:
+                                        if len(list_upFile) == 1 and self.threadID == 0:
+                                            self.list = self.list_upFile1[int(self.pageNumberStart)]
+                                            self.list_upFile2 = self.list[0]
+                                            self.code_file = self.list[1]
 
+                                        else:
+                                            self.list = []
+                                            self.list_upFile2 = ''
+                                            
+                                else:
+                                    
+                                    if len(list_upFile) > int(self.pageNumberStart)+1 :
+                                        self.list = self.list_upFile1[int(self.pageNumberStart)]
+                                        self.list_upFile2 = self.list[0]
+                                        self.code_file = self.list[1]
                                     else:
                                         self.list = []
                                         self.list_upFile2 = ''
-                                        self.code_file = 0
-                            else:
+                                        
+                            elif self.list == []:
+                                
                                 if len(list_upFile) > int(self.pageNumberStart)+1 :
                                     self.list = self.list_upFile1[int(self.pageNumberStart)]
                                     self.list_upFile2 = self.list[0]
                                     self.code_file = self.list[1]
+                                elif len(list_upFile) == 1 and self.pageNumberStart == 0:
+                                    if self.code_file > 800:
+                                        self.list = self.list_upFile1[-1]
+                                        self.list_upFile2 = self.list[0]
+                                        self.code_file = self.list[1]
+
+                                elif len(list_upFile) == 0 and self.code_file > 100:
+                                    running = False
+                                    break
                                 else:
                                     self.list = []
                                     self.list_upFile2 = ''
-                                    self.code_file = 0
-                        else:
-                            if len(list_upFile) > int(self.pageNumberStart)+1 :
-                                self.list = self.list_upFile1[int(self.pageNumberStart)]
-                                self.list_upFile2 = self.list[0]
-                                self.code_file = self.list[1]
-                            else:
-                                self.list = []
-                                self.list_upFile2 = ''
-                                self.code_file = 0
 
-                    
-                
-                
+                    except:
+                        
+                        pass
+
+                if len(list_upFile) == 0 and self.code_file > 800:
+                    break          
 
         elif self.totalPageNumber >= 1 and self.typeOfThread != 'upData':
 
@@ -235,12 +249,10 @@ class MyThread(threading.Thread):
                     TBMST.MaHSMT(page_number=SoTrangHSMT)
 
                 elif self.typeOfThread == 'TT':
-
                     CrawlMaTinTuc(pageNumber=self.pageNumber, codes=self.codes, details=self.details,
                                   session1=self.session, folder_path1=self.folder_path1)
 
                 elif self.typeOfThread == 'DT':
-
                     CrawlMaTinTucDongThau(pageNumber=self.pageNumber, codes=self.codes, details=self.details,
                                           session1=self.session, folder_path1=self.folder_path1)
                 
@@ -252,56 +264,8 @@ class MyThread(threading.Thread):
 
                 self.pageNumber = self.pageNumber + self.step
 
-        
-                    
 
-        self.step = step
-
-        self.typeOfThread = typeOfThread
-
-        # time sleep of each thread
-        self.i = 0
-
-        self.details = [0]
-
-        self.codes = [0]
-
-        self.session = requests.Session()
-        self.adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20,max_retries=3)
-        self.session.mount('http://', self.adapter)
-        self.session.mount('https://', self.adapter)
-
-        if len(list_upFile) >= int(self.threadID):
-            if list_upFile != []:
-                self.list = list_upFile1[int(self.threadID)]
-                self.list_upFile2 = self.list[0]
-                self.code_file = self.list[1]
-            else:
-                self.list = []
-                self.list_upFile2 = ''
-                self.code_file = 0
-        else:
-            self.list = []
-            self.list_upFile2 = ''
-            self.code_file = 0
-        
-    def run(self):
-        print("Starting upFile" + self.name)
-        while True:
-            if self.list != []:
-                del list_upFile[self.threadID]
-                self.media_id, self.file_name_for_user, self.url = up_pccc_app_medias(self.list_upFile2)
-                update_pccc_news_files(self.media_id, self.file_name_for_user, self.url, self.code_file)
-                if len(list_upFile) >= int(self.threadID) :
-                    self.list = self.list_upFile1[int(self.threadID)]
-                    self.list_upFile2 = self.list[0]
-                    self.code_file = self.list[1]
-                else:
-                    self.list = []
-                    self.list_upFile2 = ''
-                    self.code_file = 0
-
-def update_pccc_news_files(media_id, file_name_for_user, url, code_file):
+def update_pccc_news_files(media_id, file_name_for_user, url, code_file, code):
     conn = connectdb.connect()
     cur = conn.cursor()
     sql = 'SELECT * FROM pccc_app_bidding_news_files WHERE file_name = %s ORDER BY created_at DESC'
@@ -380,26 +344,29 @@ def up_pccc_app_medias(code):
     type = 'pdf'
     path = 'a'
     file_name_for_user = 'a.pdf'"""
-    url = 'http://localhost:1234/api/download/file/browser/public?fileId=' + code
-    check,name,type,path, file_name_for_user = upFileDinhKemHSMT.downFileAndUpLoad(code=code)
-    media_id = 0
+    try:
+        url = 'http://localhost:1234/api/download/file/browser/public?fileId=' + code
+        check,name,type,path, file_name_for_user = upFileDinhKemHSMT.downFileAndUpLoad(code=code)
+        media_id = 0
 
-   
+    
 
-    if check == 0:
-        return code, check, media_id, file_name_for_user, url
-    else:
-        conn = connectdb.connect()
-        cur = conn.cursor()
-        sql= "INSERT INTO pccc_app_medias (name, type, path, created_at, updated_at) VALUES (%s, %s, %s, NOW(), NOW())"
-        val = (name, type, path)
-        cur.execute(sql,val)
-        conn.commit()
-        media_id = cur.lastrowid
-        media_id = int(media_id)
-        check = 1
+        if check == 0:
+            return code, check, media_id, file_name_for_user, url
+        else:
+            conn = connectdb.connect()
+            cur = conn.cursor()
+            sql= "INSERT INTO pccc_app_medias (name, type, path, created_at, updated_at) VALUES (%s, %s, %s, NOW(), NOW())"
+            val = (name, type, path)
+            cur.execute(sql,val)
+            conn.commit()
+            media_id = cur.lastrowid
+            media_id = int(media_id)
+            check = 1
+    except:
+        pass
         
-        return code, check, media_id, file_name_for_user, url
+    return code, check, media_id, file_name_for_user, url
     
 
 def SoTrangNhaThau(startDay, endDay):
@@ -1715,8 +1682,7 @@ def CrawlMaTinTuc(pageNumber, codes, details, session1, folder_path1):
         i = random.randrange(1,10)
         time.sleep(i)
         session = session1
-        data = '{"pageSize":8,"pageNumber":"' + str(
-            pageNumber) + '","query":[{"index":"es-contractor-selection","keyWord":"","matchType":"all","matchFields":["notifyNo","bidName"],"filters":[{"fieldName":"publicDate","searchType":"range","from":"' + startDay + 'T00:00:00.000Z","to":"' + endDay + 'T23:59:59.059Z"}]}]}'
+        data = '{"pageSize":8,"pageNumber":"' + str(pageNumber) + '","query":[{"index":"es-contractor-selection","keyWord":"","matchType":"all","matchFields":["notifyNo","bidName"],"filters":[{"fieldName":"publicDate","searchType":"range","from":"' + startDay + 'T00:00:00.000Z","to":"' + endDay + 'T23:59:59.059Z"}]}]}'
         response = session.post(
             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/smart/search',
             cookies=cookies,
@@ -3661,7 +3627,7 @@ def SoTrangTinTucDongThau(startDay, endDay):
     }
 
     try:
-        data = '{"pageSize":8,"pageNumber":"0","query":[{"index":"es-contractor-selection","keyWord":"","matchType":"all","matchFields":["notifyNo","bidName"],"filters":[{"fieldName":"bidCloseDate","searchType":"range","from":"' + startDay + 'T00:00:00.000Z","to":"' + endDay + 'T23:59:59.059Z"},{"fieldName":"type","searchType":"in","fieldValues":["es-notify-contractor"]}]}]}'
+        data = '{"pageSize":8,"pageNumber":"0","query":[{"index":"es-contractor-selection","matchType":"all","matchFields":["notifyNo","bidName"],"filters":[{"fieldName":"bidCloseDate","searchType":"range","from":"'+startDay+'T00:00:00.000Z","to":"'+endDay+'T23:59:59.059Z"},{"fieldName":"type","searchType":"in","fieldValues":["es-notify-contractor"]},{"fieldName":"caseKHKQ","searchType":"not_in","fieldValues":["1"]}]}]}'
         response = requests.post(
             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/smart/search',
             cookies=cookies,
@@ -3673,6 +3639,7 @@ def SoTrangTinTucDongThau(startDay, endDay):
         json_data = response.json()
         reviews = json_data
         totalPageNumber = reviews['page']['totalPages']
+        return totalPageNumber
 
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
@@ -3721,7 +3688,8 @@ def SoTrangTinTucDongThau(startDay, endDay):
         session1 = requests.Session()
         pass
 
-    return totalPageNumber
+    return 0
+    
 
 
 def CrawlMaTinTucDongThau(pageNumber, codes, details, session1, folder_path1):
@@ -3761,8 +3729,7 @@ def CrawlMaTinTucDongThau(pageNumber, codes, details, session1, folder_path1):
     }
 
     try:
-        data = '{"pageSize":8,"pageNumber":"' + str(
-            pageNumber) + '","query":[{"index":"es-contractor-selection","keyWord":"","matchType":"all","matchFields":["notifyNo","bidName"],"filters":[{"fieldName":"bidCloseDate","searchType":"range","from":"' + startDay + 'T00:00:00.000Z","to":"' + endDay + 'T23:59:59.059Z"},{"fieldName":"type","searchType":"in","fieldValues":["es-notify-contractor"]}]}]}'
+        data = '{"pageSize":8,"pageNumber":"'+str(pageNumber)+'","query":[{"index":"es-contractor-selection","matchType":"all","matchFields":["notifyNo","bidName"],"filters":[{"fieldName":"bidCloseDate","searchType":"range","from":"'+startDay+'T00:00:00.000Z","to":"'+endDay+'T23:59:59.059Z"},{"fieldName":"type","searchType":"in","fieldValues":["es-notify-contractor"]},{"fieldName":"caseKHKQ","searchType":"not_in","fieldValues":["1"]}]}]}'
         response = requests.post(
             'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/smart/search',
             cookies=cookies,
@@ -3865,7 +3832,7 @@ def CrawlMaTinTucDongThau(pageNumber, codes, details, session1, folder_path1):
                             print(code)
                             #Tim con code nao khac khong
                     else:
-                        news_id = CrawlDetail_DT_DXT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1],mode='else')
+                        CrawlDetail_DT_DXT(code=code[0],details=details,session1=session1,codes=code,folder_path1=folder_path1,notify_no=code[1],mode='else')
 
         codes.clear()
 
@@ -3933,8 +3900,6 @@ def CrawlMaTinTucDongThau(pageNumber, codes, details, session1, folder_path1):
         pass
 
     return
-
-
 def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,mode):
     cookies = {
         'COOKIE_SUPPORT': 'true',
@@ -4059,7 +4024,7 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
                     datesucces = review2['bidoBidroundMngViewDTO']["successBidOpenDate"]
 
             if review2['bidSubmissionByContractorViewResponse'] is None:
-                nhap1, dem1, datesucces, listLienDanh, listLienDanhChinh = CrawlDetail_DT_DXT_2(code=code, session1=session1, codes=codes, folder_path1=folder_path1, notify_no=notify_no)
+                nhap1, dem1, datesucces = CrawlDetail_DT_DXT_2(code=code, session1=session1, codes=codes, folder_path1=folder_path1, notify_no=notify_no)
 
             else:
                 if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is not None:
@@ -4389,8 +4354,6 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
             bien,#32
             nhap1,#33
             datesucces,#34
-            listLienDanh,
-            listLienDanhChinh
             ])
         
         bidType = upABN_db.bid_type(review['investField'])
@@ -4401,20 +4364,27 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
         with open('' + folder_path1 + '/DXT.csv', 'a', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(details)
+
         if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
 
             if details[10] == 'Tư vấn' or details[10] == 'TV':
 
                 if mode == 'dsntdkt':
+
                     news_id = upABN_db.upDataDB_1_DXT_TV(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
+
                     open_result_status = 'complete_gd_hskt'
                     upABN_db.upDataDB_DXT_TV(tim_open, news_id,open_result_status)
-
+                
                 elif mode =='kqmt':
+
                     news_id = upABN_db.upDataDB_1_DXT_TV(7, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'], review["notifyVersion"])
+                    
                     open_result_status = 'open_hskt_complete'
                     upABN_db.upDataDB_DXT_TV(tim_open, news_id,open_result_status)
+
                     upABNDetail_db.upData_DXT_TV(details, news_id)
+
                     upABO_db.upDataDB_TV(details, news_id)
 
             else:
@@ -4425,6 +4395,7 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
                 upABNDetail_db.upData_DXT(details, news_id)
 
                 upABO_db.upDataDB(details, news_id)
+
         details.clear()
         return news_id
 
@@ -4591,8 +4562,8 @@ def CrawlDetail_DT_DXT_2(code, session1, codes, folder_path1, notify_no):
                                       str(nhathau['contractPeriodDT']) + nhathau['contractPeriodDTUnit']#8
                                       ])
                         dem = dem + 1
-        liendanh, liendanhchinh = LienDanh.liendanh_DXT(review)
-        return nhap1, dem, datesucces, liendanh, liendanhchinh
+
+        return nhap1, dem, datesucces
 
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
@@ -4776,7 +4747,7 @@ def CrawlDetail_DT_DXT_TV_KQMT(code,details,session1,codes,folder_path1,notify_n
                     datesucces = review2['bidoBidroundMngViewDTO']["successBidOpenDate"]
 
             if review2['bidSubmissionByContractorViewResponse'] is None:
-                nhap1, dem1, datesucces, listLienDanh, listLienDanhChinh = CrawlDetail_DT_DXT_TV_2(code=code, session1=session1, codes=codes,folder_path1=folder_path1, notify_no=notify_no)
+                nhap1, dem1, datesucces = CrawlDetail_DT_DXT_TV_2(code=code, session1=session1, codes=codes,folder_path1=folder_path1, notify_no=notify_no)
 
             else:
                 if review2['bidSubmissionByContractorViewResponse']['bidSubmissionDTOList'] is not None:
@@ -5106,8 +5077,6 @@ def CrawlDetail_DT_DXT_TV_KQMT(code,details,session1,codes,folder_path1,notify_n
             bien,#32
             nhap1,#33
             datesucces,#34
-            listLienDanh,
-            listLienDanhChinh
             ])
         
         bidType = upABN_db.bid_type(review['investField'])
@@ -5316,9 +5285,8 @@ def CrawlDetail_DT_DXT_TV_2(code, session1, codes, folder_path1, notify_no):
                                       str(nhathau['contractPeriodDT']) + nhathau['contractPeriodDTUnit']#8
                                       ])
                         dem = dem + 1
-        liendanh, liendanhchinh = LienDanh.liendanh_DXT(review)
 
-        return nhap1, dem, datesucces, liendanh,liendanhchinh
+        return nhap1, dem, datesucces
 
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
@@ -6095,7 +6063,7 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
             if listHangHoa != []:
                 upABRGoods_db.upData_CNTTT(listHangHoa, news_id)
             up_ABN_joint_ventures_db.upData_CNTTT(listLienDanh, news_id, 8)
-            # print(1)
+            
 
         with open('' + folder_path1 + '/CNTTT.csv', 'a', encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -6414,7 +6382,7 @@ def CrawDetail_DT_CNTTT_2(inputResultId, session1, folder_path1, nhap2):
                     [nhathau['orgCode'], nhathau['orgFullname'], nhathau['lotFinalPrice'], nhathau['bidWiningPrice'],
                      str(nhathau['cperiod']) + nhathau['cperiodUnit']])
 
-        return nhap2,  review3['bideContractorInputResultDTO']['decisionDate'], crawlDetail_HangHoa_CNTTT(review3), LienDanh.liendanh2(review3)
+        return nhap2,  review3['bideContractorInputResultDTO']['decisionDate'], crawlDetail_HangHoa_CNTTT(review3), LienDanh.liendanh(review3)
     except requests.ReadTimeout as err:
         print(f"{type(err).__name__} was raised: {err}")
         f = open('' + folder_path1 + "/log.txt", "a")
@@ -7868,7 +7836,7 @@ SoTrangBMT = SoTrangBenMoiThau(startDay, endDay)
 SoTrangTT = SoTrangTinTuc(startDay, endDay)
 SoTrangDT = SoTrangTinTucDongThau(startDay, endDay)
 SoTrangHSMT = SoTrangHoSoMoiThau(startDay, endDay)
-
+print(SoTrangDT)
 # main
 try:
     folder_path = './' + startDay + 'to' + endDay + ''
@@ -7885,7 +7853,7 @@ try:
 
     thread_BenMoiThau = 2
 
-    thread_TinTucDongThau = 15
+    thread_TinTucDongThau = 10
 
     thread_upData = 10
 
@@ -7927,7 +7895,7 @@ try:
 
         elif (i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau - 1) and(
                 i <= thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau + thread_HSMT - 1):
-            thread = MyThread(i, "thread" + b, thread_HSMT, 'HSMT', dem_HSMT, thread_HSMT)
+            thread = MyThread(i, "thread" + b, thread_HSMT, 'HSMT', dem_HSMT, thread_HSMT, list_upFile)
             dem_HSMT = dem_HSMT + 1
 
         elif i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau + thread_HSMT - 1 and i <= totalThread - 1:

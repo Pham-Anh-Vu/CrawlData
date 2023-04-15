@@ -2,7 +2,8 @@ import requests
 
 import upABNDetail_db
 import upABN_db
-
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def MaHSMT(page_number):
     for page in range(page_number):
@@ -279,4 +280,4 @@ def CrawlDetail_TBMST(id):
     if upABN_db.ktTrungDL(review1['notifyNo'], review1["notifyVersion"]) == None:
         news_id = upABN_db.upDataDB_HSMT(type_id, bid_type, bid_method, 1, bid_number, bid_turn_no, time_close, date_ap)
         upABNDetail_db.upData_HSMT(detail, news_id)
-        print(1)
+       
