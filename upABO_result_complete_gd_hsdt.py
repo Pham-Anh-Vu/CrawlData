@@ -17,7 +17,6 @@ def upData(details, news_id, result):
             val = (contractor_name,)
             cur.execute(sql, val)
             a = cur.fetchone()
-            conn.commit()
             number_dkkd = ""
             subject_id = 0
             if cur.fetchone() != None:

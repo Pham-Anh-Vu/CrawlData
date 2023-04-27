@@ -41,12 +41,17 @@ all_objects = muppy.get_objects()
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-yesterday = datetime.now() - timedelta(days=1)
+yesterday = datetime.now() - timedelta(days=4)
 
 yesterday_str = yesterday.strftime('%Y-%m-%d')
 
 startDay = str(yesterday_str)
 endDay = str(yesterday_str)
+
+global now
+time_now = datetime.now()
+formatted_now = time_now.strftime("%Y-%m-%d")
+now = formatted_now + ' 00:00:00'
 
 areaType1 = []
 
@@ -96,10 +101,7 @@ class MyThread(threading.Thread):
         self.codes = [0]
 
         self.session = requests.Session()
-        self.adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20,max_retries=3)
-        self.session.mount('http://', self.adapter)
-        self.session.mount('https://', self.adapter)
-
+        
         self.totalPageNumber = 0
 
         self.pageNumberStart = pageNumberStart
@@ -266,19 +268,20 @@ class MyThread(threading.Thread):
 
 
 def update_pccc_news_files(media_id, file_name_for_user, url, code_file, code):
+   
     conn = connectdb.connect()
     cur = conn.cursor()
-    sql = 'SELECT * FROM pccc_app_bidding_news_files WHERE file_name = %s ORDER BY created_at DESC'
+    sql = "SELECT * FROM pccc_app_bidding_news_files WHERE file_name = %s AND created_at >= %s  ORDER BY created_at DESC"
     file_name = 'ID file đính kèm: ' + str(code)
-    val = (file_name,)
+    val = (file_name,now)
     cur.execute(sql, val)
     myresult = cur.fetchone()
     
     if myresult is not None:
         if myresult != []:
             news_files_id = myresult[0]
-            sql = 'UPDATE pccc_app_bidding_news_files SET file_name = %s , link_muasamcong = %s , media_id=%s , updated_at = NOW() WHERE `id` = %s'
-            val = (file_name_for_user, url, media_id, news_files_id)
+            sql = 'UPDATE pccc_app_bidding_news_files SET file_name = %s , link_muasamcong = %s , media_id=%s , updated_at = NOW() WHERE `id` = %s AND created_at >= %s' 
+            val = (file_name_for_user, url, media_id, news_files_id,now)
             cur.execute(sql, val)
             conn.commit()
     
@@ -708,7 +711,7 @@ def CrawlDetailNhaThau(code, details, session1, codes, folder_path1):
         else:
             for review in reviews['businesses']:
                 nhap.append([review['code'], review['name'], review['main']])
-
+        details = []
         details.extend([reviews["orgFullName"],
                         reviews['orgEnName'],
                         reviews['orgCode'],
@@ -776,7 +779,7 @@ def CrawlDetailNhaThau(code, details, session1, codes, folder_path1):
             operation_date = None
 
         contractor = 1
-
+        
         conn = connectdb.connect()
         cur = conn.cursor()
         sql = "SELECT id FROM pccc_app_job_company_profiles WHERE `company_name` = %s"
@@ -1358,7 +1361,7 @@ def CrawlDetailBenMoiThau(code, details, session1, codes, folder_path1):
 
         if reviews['officeWar'] is None:
             reviews['officeWar'] = ''
-
+        details = []
         details.extend([reviews['orgFullName'],
                         reviews['orgEnName'],
                         reviews['orgCode'],
@@ -2057,7 +2060,7 @@ def CrawlDetail_TT_KHLCNT(code, details, session1, codes, folder_path1):
             review['decisionFileName'] = ''
 
         a = 0
-
+        details = []
         details.extend([review['planNo'],
                         review['name'],
                         review['planVersion'],
@@ -2156,10 +2159,9 @@ def upData_KHLCNT(details):
 
     conn = connectdb.connect()
     cur = conn.cursor()
-    sql = "SELECT id FROM pccc_app_job_company_profiles WHERE company_name = %s"
+    sql = "SELECT `id` FROM pccc_app_job_company_profiles WHERE company_name = %s"
     val = (ten_chu_dau_tu,)
     cur.execute(sql, val)
-    conn.commit()
     myresult = cur.fetchone()
     if myresult:
         subject_id_1 = myresult[0]
@@ -2168,11 +2170,10 @@ def upData_KHLCNT(details):
     else:
         subject_id_1 = None
         subject_type_1 = None
-
-    sql = "SELECT * FROM pccc_app_bidding_news WHERE type_id = 1 AND bid_number = %s AND bid_turn_no = %s"
-    val = (bid_number, bid_turn_no)
+    
+    sql = "SELECT * FROM pccc_app_bidding_news WHERE type_id = 1 AND bid_number = %s AND bid_turn_no = %s AND created_at >= %s"
+    val = (bid_number, bid_turn_no, now)
     cur.execute(sql, val)
-    conn.commit()
     myresult = cur.fetchall()
 
     if myresult == []:
@@ -3146,7 +3147,7 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
 
         if review['notifyVersion'] is None:
             review['notifyVersion'] = ''
-
+        details = []
         details.extend([review['notifyNo'],#0
                         review['publicDate'],#1
                         review["notifyVersion"],#2
@@ -3197,18 +3198,15 @@ def CrawlDetail_TT_TBMT_CDT(code, details, session1, codes, folder_path1):
 
         if upABN_db.ktTrungDL(review['notifyNo'], review["notifyVersion"]) == None:
 
-            news_id = upABN_db.upDataDB(3, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'],
-                                        review["notifyVersion"],
-                                        tim_close, time_post, date_app)
+            news_id = upABN_db.upDataDB(3, bidType, bidMethod, 1, crea_at, crea_at, review['notifyNo'],review["notifyVersion"],tim_close, time_post, date_app)
 
             upABNDetail_db.upData(details, news_id)
-
+            
             conn = connectdb.connect()
             cur = conn.cursor()
-            sql = "SELECT * FROM pccc_app_bidding_news_details WHERE `key` = %s AND news_id = %s"
-            val = ('ho-so-moi-thau', news_id)
+            sql = "SELECT * FROM pccc_app_bidding_news_details WHERE `key` = %s AND news_id = %s AND created_at >= %s"
+            val = ('ho-so-moi-thau', news_id, now)
             cur.execute(sql, val)
-            conn.commit()
             myresult = cur.fetchone()
             if myresult is not None:
                 if myresult != []:
@@ -3516,7 +3514,7 @@ def CrawlDetail_TT_DA(code, details, session1, codes, folder_path1):
                 review['investTotal'] = 0
 
             nhap.append([review['planNo'], review['name'], review['investTotal']])
-
+        details = []
         details.extend(
             [reviews1['no'], reviews1['status'], reviews1['name'], reviews1['investTarget'], reviews1['investorName'],
              json_data['competentPersons'], thoigian, json_data['pgroup'], json_data['pform'], json_data['isOda'],
@@ -4317,7 +4315,7 @@ def CrawlDetail_DT_DXT(code, details, session1, codes, folder_path1, notify_no,m
             review['investField'] = "Tư vấn"
         elif review['investField'] == "XL":
             review['investField'] = "Xây lắp"
-
+        details = []
         details.extend([
             review['notifyNo'],#0
             review['publicDate'],#1
@@ -5040,7 +5038,7 @@ def CrawlDetail_DT_DXT_TV_KQMT(code,details,session1,codes,folder_path1,notify_n
             review['investField'] = "Tư vấn"
         elif review['investField'] == "XL":
             review['investField'] = "Xây lắp"
-
+        details = []
         details.extend([
             review['notifyNo'],#0
             review['publicDate'],#1
@@ -5568,7 +5566,7 @@ def CrawlDetail_DT_DXT_TV_DSNTDKT(code,details,session1,codes,folder_path1,notif
                         reason=''      
         
         details=[]
-        details.append([review1['bidNo'],#0
+        details.extend([review1['bidNo'],#0
                         review1['status'],#1
                         review1['procuringEntityName'],#2
                         review1['investorName'],#3
@@ -6005,6 +6003,7 @@ def CrawlDetail_DT_CNTTT(code, details, session1, codes, folder_path1, code1, co
             link2 = 0
         if review1['bidPrice'] is None:
             review1['bidPrice'] = 0
+        details = []   
         details.extend([review1['notifyNo'],
                         review1['publicDate'],
                         review1["notifyVersion"],  # 2
@@ -6567,6 +6566,7 @@ def CrawDetail_DT_CNTTT_KQM(inputResultId, details, session1, codes, folder_path
 
                             nhap.append([nhathau['orgCode'], nhathau['orgFullname'], nhathau['bidWiningPrice']])
         details.clear()
+        details = []
         details.extend(
             [review1['notifyNo'], review1['publicDate'], review1['investorName'], review2['planNo'], review1['bidName'],
              review1['bidEstimatePrice'], review1['bidPrice'], review1['ctype'], review1['bidForm'], review1['bidMode'],
@@ -6866,7 +6866,7 @@ def CrawlDetail_DT_DHT(code, details, session1, codes, folder_path1):
             link2 = 0
         if review1['bidPrice'] is None:
             review1['bidPrice'] = 0
-
+        details = []
         details.extend(
             [review1['notifyNo'], review1['publicDate'], review1['planNo'], review1['planType'], review1['planName'],
              review1['bidName'], review1['investorName'], review1['procuringEntityName'], review1['capitalDetail'],

@@ -10,6 +10,7 @@ def upData_CNTTT(listLienDanh, news_id, type_id):
     #     jv_name = jv_name + listLienDanh[i] + ' - '
     # jv_name = jv_name + listLienDanh[len(listLienDanh)-1]
     jv_name = listLienDanh[0]
+    listLienDanh.find()
     listLienDanh = listLienDanh[0].split(' - ')
     kt = 0
     for i in listLienDanh:
@@ -21,12 +22,11 @@ def upData_CNTTT(listLienDanh, news_id, type_id):
         list_company.append(i.rstrip())
     listLienDanh = list_company
 
+    conn = connectdb.connect()
     for i in listLienDanh:
         sql = f"SELECT * FROM pccc_app_job_company_profiles WHERE company_name = '{i}'"
-        conn = connectdb.connect()
         curses = conn.cursor()
         curses.execute(sql)
-        conn.commit()
         tuple_company = curses.fetchone()
         list_id.append(str(tuple_company[0]))
         list_taxCode.append(tuple_company[15])

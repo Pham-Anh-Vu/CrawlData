@@ -1,22 +1,22 @@
 import csv
 import json
 import mariadb
+import sys
 import datetime
+import mysql.connector
+import connectdb
+global now
+time_now = datetime.datetime.now()
+formatted_now = time_now.strftime("%Y-%m-%d")
+now = formatted_now + ' 00:00:00'
 
-def connect():
-    conn = mariadb.connect(
-        user="root",
-        password="Nmd021200.",
-        host="127.0.0.1",
-        port=3306,
-        database="test"
-    )
-    return conn
+
 
 def ktTrungDL(id, turn_no):
-    conn = connect()
+    
+    conn = connectdb.connect()
     mycursor = conn.cursor()
-    sql = f"SELECT * FROM pccc_app_bidding_news WHERE bid_number = '{id}' AND bid_turn_no = '{turn_no}'"
+    sql = f"SELECT * FROM pccc_app_bidding_news WHERE bid_number = '{id}' AND bid_turn_no = '{turn_no}' AND created_at >= '{now}'"
     mycursor.execute(sql)
     result = mycursor.fetchone()
     return result
@@ -79,7 +79,7 @@ def date_app2(data):
     return dat_app
 
 def upDataDB(type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no, time_bid_closing, time_posting, date_of_approval):
-    conn = connect()
+    conn = connectdb.connect()
     mycursor = conn.cursor()
     sql = "INSERT INTO pccc_app_bidding_news (type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no, time_bid_closing, time_posting, date_of_approval) " \
           f"VALUES ('{type_id}', '{bid_type}', '{bid_method}', '{aujusted_limited}', '{created_at}','{updated_at}', '{bid_number}', '{bid_turn_no}', '{time_bid_closing}', '{time_posting}', '{date_of_approval}');"
@@ -96,14 +96,15 @@ def yesterday():
     return yesterday
 
 def upDataDB_DXT(bid_open_tim, news_id):
-    conn = connect()
+    
+    conn = connectdb.connect()
     mycursor = conn.cursor()
-    sql = f"UPDATE pccc_app_bidding_news SET bid_opening_time = '{bid_open_tim}', open_result_status = 'bid_open_complete' WHERE `id` = '{news_id}';"
+    sql = f"UPDATE pccc_app_bidding_news SET bid_opening_time = '{bid_open_tim}', open_result_status = 'bid_open_complete' WHERE `id` = '{news_id}' AND created_at >= '{now}';"
     mycursor.execute(sql)
     conn.commit()
 
 def upDataDB_1_DXT(type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no):
-    conn = connect()
+    conn = connectdb.connect()
     mycursor = conn.cursor()
     sql = "INSERT INTO pccc_app_bidding_news (type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no) " \
           f"VALUES ('{type_id}', '{bid_type}', '{bid_method}', '{aujusted_limited}', '{created_at}','{updated_at}', '{bid_number}', '{bid_turn_no}');"
@@ -114,7 +115,7 @@ def upDataDB_1_DXT(type_id, bid_type, bid_method, aujusted_limited, created_at, 
     return news_id
 
 def upDataDB_HSMT(type_id, bid_type, bid_method, aujusted_limited, bid_number, bid_turn_no, time_bid_closing, date_of_approval):
-    conn = connect()
+    conn = connectdb.connect()
     mycursor = conn.cursor()
     sql = "INSERT INTO pccc_app_bidding_news (type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no, time_bid_closing, date_of_approval) " \
           f"VALUES ('{type_id}', '{bid_type}', '{bid_method}', '{aujusted_limited}', NOW(), NOW(), '{bid_number}', '{bid_turn_no}', '{time_bid_closing}', '{date_of_approval}');"
@@ -125,14 +126,15 @@ def upDataDB_HSMT(type_id, bid_type, bid_method, aujusted_limited, bid_number, b
     return news_id
 
 def upDataDB_DXT_TV(bid_open_tim, news_id,open_result_status):
-    conn = connect()
+   
+    conn = connectdb.connect()
     mycursor = conn.cursor()
-    sql = f"UPDATE pccc_app_bidding_news SET bid_opening_time = '{bid_open_tim}', open_result_status = '{open_result_status}' WHERE `id` = '{news_id}';"
+    sql = f"UPDATE pccc_app_bidding_news SET bid_opening_time = '{bid_open_tim}', open_result_status = '{open_result_status}' WHERE `id` = '{news_id}' AND created_at >= '{now}';"
     mycursor.execute(sql)
     conn.commit()
 
 def upDataDB_1_DXT_TV(type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no):
-    conn = connect()
+    conn = connectdb.connect()
     mycursor = conn.cursor()
     sql = "INSERT INTO pccc_app_bidding_news (type_id, bid_type, bid_method, aujusted_limited, created_at, updated_at, bid_number, bid_turn_no) " \
           f"VALUES ('{type_id}', '{bid_type}', '{bid_method}', '{aujusted_limited}', '{created_at}','{updated_at}', '{bid_number}', '{bid_turn_no}');"

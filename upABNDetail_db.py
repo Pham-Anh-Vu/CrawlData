@@ -4,6 +4,10 @@ import json
 import mariadb
 from unidecode import unidecode
 import connectdb
+global now
+time_now = datetime.datetime.now()
+formatted_now = time_now.strftime("%Y-%m-%d")
+now = formatted_now + ' 00:00:00'
 
 def time_close(data):
     if data == '':
@@ -304,7 +308,6 @@ def upData(details, id1):
     sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
     val = (value8,)
     cur.execute(sql,val)
-    conn.commit()
     myresult = cur.fetchone()
 
     if myresult is not None:
@@ -449,7 +452,6 @@ def upData_DXT(details, id):
     sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
     val = (value4,)
     cur.execute(sql, val)
-    conn.commit()
     cur.fetchone()
     if cur.fetchone() is None:
         myresult = ""
@@ -457,21 +459,22 @@ def upData_DXT(details, id):
         myresult = cur.fetchone()[0]
 
     if myresult != "":
-        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}';"
+       
+        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}' AND created_at >= '{now}';"
         cur.execute(sql)
         conn.commit()
 
     sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
     val = (value6,)
     cur.execute(sql, val)
-    conn.commit()
     cur.fetchone()
     if cur.fetchone() is None:
         myresult = ""
     else: myresult = cur.fetchone()[0]
 
     if myresult != "":
-        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Bên mời thầu' AND news_id = '{id}';"
+        
+        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Bên mời thầu' AND news_id = '{id}' AND created_at >= '{now}';"
         cur.execute(sql)
         conn.commit()
 
@@ -584,7 +587,6 @@ def upData_DXT_TV(details, id):
     sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
     val = (value4,)
     cur.execute(sql, val)
-    conn.commit()
     cur.fetchone()
     if cur.fetchone() is None:
         myresult = ""
@@ -592,7 +594,8 @@ def upData_DXT_TV(details, id):
         myresult = cur.fetchone()[0]
 
     if myresult != "":
-        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Tên bên mời thầu' AND news_id = '{id}';"
+        
+        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Tên bên mời thầu' AND news_id = '{id}' AND created_at >= '{now}';"
         cur.execute(sql)
         conn.commit()
 
@@ -723,7 +726,6 @@ def upData_CNTTT(details, id1):
     val = (value10,)
     cur.execute(sql, val)
     a = cur.fetchone()
-    conn.commit()
     value11 = ''
     if a != None:
         value11 = str(a[15])
@@ -774,14 +776,14 @@ def upData_CNTTT(details, id1):
     val = (value10,)
     cur.execute(sql, val)
     a = cur.fetchone()
-    conn.commit()
     if a is None:
         myresult = ""
     else:
         myresult = a[0]
 
     if myresult != "":
-        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}';"
+        
+        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}' AND created_at >= '{now}';"
         cur.execute(sql)
         conn.commit()
 
@@ -989,14 +991,14 @@ def upData_HSMT(details, id1):
     val = (value10,)
     cur.execute(sql, val)
     a = cur.fetchone()
-    conn.commit()
     if a is None:
         myresult = ""
     else:
         myresult = a[0]
 
     if myresult != "":
-        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}';"
+        
+        sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}' AND created_at >= '{now}';"
         cur.execute(sql)
         conn.commit()
 # upData_CNTTT(details, 1841085)

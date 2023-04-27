@@ -38,13 +38,12 @@ def upDataDB(details, news_id):
         val = (contractor_name,)
         cur.execute(sql, val)
         a = cur.fetchone()
-        conn.commit()
         cur.fetchone()
         number_dkkd = ""
         subject_id = 0
 
-        if cur.fetchone() != None:
-            for i in cur.fetchone():
+        if a != None:
+            for i in a:
                 number_dkkd = str(a[15])
                 subject_id = str(a[0])
         # vì data test chưa có app job company profile nên subject id đặt bằng 0
@@ -76,15 +75,14 @@ def upDataDB_TV(details, news_id):
         sql = "SELECT * FROM pccc_app_job_company_profiles WHERE company_name = %s"
         val = (contractor_name,)
         cur.execute(sql, val)
-        conn.commit()
-        cur.fetchone()
+        b = cur.fetchone()
         number_dkkd = ""
         subject_id = ""
 
-        if cur.fetchone() != None:
-            for i in cur.fetchone():
-                number_dkkd = str(cur.fetchone()[15])
-                subject_id = str(cur.fetchone()[0])
+        if b != None:
+            for i in b:
+                number_dkkd = str(b[15])
+                subject_id = str(b[0])
         # vì data test chưa có app job company profile nên subject id đặt bằng 0
         data = (news_id, number_dkkd, contractor_name, effect_hsdxkt, effect_bd_dt, duration_contract, time(str(datetime.now())), time(str(datetime.now())), 0,subject_type, )
         sql = "INSERT INTO pccc_app_bidding_open_result_open_hskt_complete (news_id, number_dkkd, contractor_name, effect_hsdxkt, effect_bd_dt, duration_of_contract, created_at, updated_at, subject_id, subject_type)" \
