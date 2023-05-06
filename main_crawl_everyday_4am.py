@@ -8,6 +8,7 @@ import time
 import os
 import json
 
+import TBMQT
 import TBMST
 import connectdb
 from unidecode import unidecode
@@ -41,7 +42,7 @@ all_objects = muppy.get_objects()
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-yesterday = datetime.now() - timedelta(days=4)
+yesterday = datetime.now() - timedelta(days=1)
 
 yesterday_str = yesterday.strftime('%Y-%m-%d')
 
@@ -131,6 +132,9 @@ class MyThread(threading.Thread):
 
         elif self.typeOfThread == 'DT':
             self.totalPageNumber = SoTrangDT
+
+        elif self.typeOfThread == 'TBMQT':
+            self.totalPageNumber = SoTrangTBMQT
 
         elif self.typeOfThread =='upData':
             if len(list_upFile) >= int(self.pageNumberStart):
@@ -249,6 +253,9 @@ class MyThread(threading.Thread):
 
                 elif self.typeOfThread == "HSMT":
                     TBMST.MaHSMT(page_number=SoTrangHSMT)
+
+                elif self.typeOfThread == "TBMQT":
+                    TBMQT.MaTBMQT(page_number=SoTrangTBMQT)
 
                 elif self.typeOfThread == 'TT':
                     CrawlMaTinTuc(pageNumber=self.pageNumber, codes=self.codes, details=self.details,
@@ -1065,6 +1072,101 @@ def SoTrangBenMoiThau(startDay, endDay):
         print(f"{type(err).__name__} was raised: {err}")
         f = open('' + folder_path + "/log.txt", "a")
         f.write("Khong lay duoc so trang ben moi thau")
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    return totalPageNumber
+
+
+def SoTrangThongBaoMoiQuanTam(startDay, endDay):
+    cookies = {
+        'COOKIE_SUPPORT': 'true',
+        'GUEST_LANGUAGE_ID': 'vi_VN',
+        '_ga': 'GA1.1.1974937140.1679213148',
+        'JSESSIONID': 'hwtqrWCt1hAfj1THy7GxX8oQGXiK11vvMmCSME41.dc_app1_01',
+        'NSC_WT_QSE_QPSUBM_NTD_NQJ': 'ffffffffaf183e2345525d5f4f58455e445a4a4217de',
+        'LFR_SESSION_STATE_20103': '1683251219224',
+        'citrix_ns_id': 'AAY73FpUZDtCyTABAAAAADuFeyfrzB16Q6f2O1xwPpu7H2EZwZrlhyq0uv0rs0RgOw==6GZUZA==71Nlw9lJwCJeyPPSPEc8PYx0Vvs=',
+        '_ga_19996Z37EE': 'GS1.1.1683249887.38.1.1683252069.0.0.0',
+    }
+
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/json',
+        # 'Cookie': 'COOKIE_SUPPORT=true; GUEST_LANGUAGE_ID=vi_VN; _ga=GA1.1.1974937140.1679213148; JSESSIONID=hwtqrWCt1hAfj1THy7GxX8oQGXiK11vvMmCSME41.dc_app1_01; NSC_WT_QSE_QPSUBM_NTD_NQJ=ffffffffaf183e2345525d5f4f58455e445a4a4217de; LFR_SESSION_STATE_20103=1683251219224; citrix_ns_id=AAY73FpUZDtCyTABAAAAADuFeyfrzB16Q6f2O1xwPpu7H2EZwZrlhyq0uv0rs0RgOw==6GZUZA==71Nlw9lJwCJeyPPSPEc8PYx0Vvs=; _ga_19996Z37EE=GS1.1.1683249887.38.1.1683252069.0.0.0',
+        'Origin': 'https://muasamcong.mpi.gov.vn',
+        'Referer': 'https://muasamcong.mpi.gov.vn/web/guest/contractor-selection?p_p_id=egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_egpportalcontractorselectionv2_WAR_egpportalcontractorselectionv2_render=index&indexSelect=null',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+        'sec-ch-ua': '"Google Chrome";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+    }
+
+    totalPageNumber = 0
+
+    try:
+        data = '{"pageSize":8,"pageNumber":"0","query":[{"index":"es-contractor-selection","matchType":"all-1","matchFields":["notifyNo","bidName"],"filters":[{"fieldName":"type","searchType":"in","fieldValues":["es-pre-notify-contractor"]},{"fieldName":"investField","searchType":"in","fieldValues":["TV"]}]}]}'
+        response = requests.post(
+            'https://muasamcong.mpi.gov.vn/o/egp-portal-contractor-selection-v2/services/smart/search',
+            cookies=cookies,
+            headers=headers,
+            data=data,
+            allow_redirects=False,
+            verify=False,
+        )
+        json_data = response.json()
+        reviews = json_data
+        totalPageNumber = reviews['page']['totalPages']
+
+    except requests.ReadTimeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path + "/log.txt", "a")
+        f.write("Khong lay duoc so trang thong bao moi quan tam")
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.exceptions.ConnectionError:
+        f = open('' + folder_path + "/log.txt", "a")
+        f.write("Khong lay duoc so trang thong bao moi quan tam")
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except requests.Timeout as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path + "/log.txt", "a")
+        f.write("Khong lay duoc so trang thong bao moi quan tam")
+        f.write('\n')
+        f.close()
+        i = random.randrange(1, 10)
+        time.sleep(i)
+        session1.close()
+        session1 = requests.Session()
+        pass
+
+    except Exception as err:
+        print(f"{type(err).__name__} was raised: {err}")
+        f = open('' + folder_path + "/log.txt", "a")
+        f.write("Khong lay duoc so trang thong bao moi quan tam")
         f.write('\n')
         f.close()
         i = random.randrange(1, 10)
@@ -7836,6 +7938,7 @@ SoTrangBMT = SoTrangBenMoiThau(startDay, endDay)
 SoTrangTT = SoTrangTinTuc(startDay, endDay)
 SoTrangDT = SoTrangTinTucDongThau(startDay, endDay)
 SoTrangHSMT = SoTrangHoSoMoiThau(startDay, endDay)
+SoTrangTBMQT = SoTrangThongBaoMoiQuanTam(startDay, endDay)
 print(SoTrangDT)
 # main
 try:
@@ -7861,7 +7964,9 @@ try:
 
     thread_HSMT = 1
 
-    totalThread = thread_upData + thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau +thread_HSMT
+    thread_TBMQT = 1
+
+    totalThread = thread_upData + thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau +thread_HSMT + thread_TBMQT
 
     threads = []
     dem_TT = 0
@@ -7871,6 +7976,7 @@ try:
     dem_HSMT = 0
     dem_TBMoiSoTuyen = 0
     dem_upData = 0
+    dem_TBMQT = 0
     time_start = datetime.now()
 
     for i in range(totalThread):
@@ -7898,7 +8004,12 @@ try:
             thread = MyThread(i, "thread" + b, thread_HSMT, 'HSMT', dem_HSMT, thread_HSMT, list_upFile)
             dem_HSMT = dem_HSMT + 1
 
-        elif i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau + thread_HSMT - 1 and i <= totalThread - 1:
+        elif (i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau + thread_HSMT - 1) and(
+                i <= thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau + thread_HSMT + thread_TBMQT - 1):
+            thread = MyThread(i, "thread" + b, thread_TBMQT, 'TBMQT', dem_TBMQT, thread_TBMQT, list_upFile)
+            dem_TBMQT = dem_TBMQT + 1
+
+        elif i > thread_BenMoiThau + thread_TinTuc + thread_NhaThau + thread_TinTucDongThau + thread_HSMT + thread_TBMQT - 1 and i <= totalThread - 1:
             thread = MyThread(i, "thread" + b, thread_upData, 'upData', dem_upData, thread_upData,list_upFile)
             dem_upData = dem_upData + 1
 

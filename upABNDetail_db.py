@@ -453,13 +453,12 @@ def upData_DXT(details, id):
     val = (value4,)
     cur.execute(sql, val)
     cur.fetchone()
-    if cur.fetchone() is None:
+    if cur.fetchone() is None or cur.fetchone() == ():
         myresult = ""
     else:
         myresult = cur.fetchone()[0]
 
     if myresult != "":
-       
         sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Chủ đầu tư' AND news_id = '{id}' AND created_at >= '{now}';"
         cur.execute(sql)
         conn.commit()
@@ -468,12 +467,11 @@ def upData_DXT(details, id):
     val = (value6,)
     cur.execute(sql, val)
     cur.fetchone()
-    if cur.fetchone() is None:
+    if cur.fetchone() is None or cur.fetchone() == ():
         myresult = ""
     else: myresult = cur.fetchone()[0]
 
     if myresult != "":
-        
         sql = f"UPDATE pccc_app_bidding_news_details SET subject_id = '{myresult}', subject_type = 'App\Models\JobCompanyProfile' WHERE `title` = 'Bên mời thầu' AND news_id = '{id}' AND created_at >= '{now}';"
         cur.execute(sql)
         conn.commit()
